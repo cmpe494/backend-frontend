@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDD to Requirements Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Mermaid.js kütüphanesi eklendi - UML diagramları için -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 BDD to Requirements Generator</h1>
+            <p>BDD senaryolarınızı yapay zeka ile teknik gereksinimlere dönüştürün</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Sol Panel: BDD Girişi -->
+            <div class="panel input-panel">
+                <div class="panel-header">
+                    <h2>📝 BDD Senaryosu</h2>
+                    <button class="btn-secondary" onclick="clearInput()">Temizle</button>
+                </div>
+                <textarea 
+                    id="bddInput" 
+                    placeholder="Feature: Kullanıcı Kaydı&#10;&#10;Scenario: Başarılı kayıt&#10;  Given kullanıcı kayıt sayfasında&#10;  When geçerli bilgiler girer&#10;  Then sistem kullanıcıyı kaydeder"
+                ></textarea>
+                
+                <!-- 3 buton eklendi: Requirements, Test Cases, UML Diagram -->
+                <div class="button-group">
+                    <button class="btn-primary" onclick="generateRequirements()">
+                        <span class="btn-icon">✨</span>
+                        Requirement Üret
+                    </button>
+                    <button class="btn-primary btn-test" onclick="generateTestCases()">
+                        <span class="btn-icon">🧪</span>
+                        Test Case Üret
+                    </button>
+                    <button class="btn-primary btn-uml" onclick="showUMLDialog()">
+                        <span class="btn-icon">📊</span>
+                        UML Diagram Üret
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sağ Panel: Çıktılar -->
+            <div class="panel output-panel">
+                <!-- Tab yapısı eklendi -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('requirements')">📋 Requirements</button>
+                    <button class="tab-btn" onclick="switchTab('testcases')">🧪 Test Cases</button>
+                    <button class="tab-btn" onclick="switchTab('uml')">📊 UML Diagram</button>
+                </div>
+
+                <!-- Requirements Tab -->
+                <div id="requirements-tab" class="tab-content active">
+                    <div class="panel-header">
+                        <h2>📋 Requirements</h2>
+                        <div class="action-buttons">
+                            <button class="btn-secondary" onclick="copyOutput('requirements')">📋 Kopyala</button>
+                            <button class="btn-secondary" onclick="downloadOutput('requirements')">💾 İndir</button>
+                        </div>
+                    </div>
+                    <div id="requirements-output" class="output-content">
+                        <div class="placeholder">
+                            <div class="placeholder-icon">🎯</div>
+                            <p>Requirement'lar burada görünecek...</p>
+                            <p class="placeholder-hint">Sol taraftan BDD senaryonuzu girin ve "Requirement Üret" butonuna tıklayın</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Cases Tab -->
+                <div id="testcases-tab" class="tab-content">
+                    <div class="panel-header">
+                        <h2>🧪 Test Cases</h2>
+                        <div class="action-buttons">
+                            <button class="btn-secondary" onclick="copyOutput('testcases')">📋 Kopyala</button>
+                            <button class="btn-secondary" onclick="downloadOutput('testcases')">💾 İndir</button>
+                        </div>
+                    </div>
+                    <div id="testcases-output" class="output-content">
+                        <div class="placeholder">
+                            <div class="placeholder-icon">🧪</div>
+                            <p>Test case'ler burada görünecek...</p>
+                            <p class="placeholder-hint">"Test Case Üret" butonuna tıklayın</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UML Diagram Tab -->
+                <div id="uml-tab" class="tab-content">
+                    <div class="panel-header">
+                        <h2>📊 UML Diagram</h2>
+                        <div class="action-buttons">
+                            <button class="btn-secondary" onclick="downloadDiagram()">💾 İndir PNG</button>
+                        </div>
+                    </div>
+                    <div id="uml-output" class="output-content">
+                        <div class="placeholder">
+                            <div class="placeholder-icon">📊</div>
+                            <p>UML Diagram burada görünecek...</p>
+                            <p class="placeholder-hint">"UML Diagram Üret" butonuna tıklayın ve diagram tipini seçin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UML Dialog Modal eklendi -->
+        <div id="umlDialog" class="modal hidden">
+            <div class="modal-content">
+                <h2>📊 UML Diagram Tipi Seçin</h2>
+                <p>Hangi UML diagram tipini oluşturmak istersiniz?</p>
+                <div class="diagram-options">
+                    <button class="diagram-btn" onclick="generateUMLDiagram('usecase')">
+                        <span class="diagram-icon">👤</span>
+                        <span>Use Case Diagram</span>
+                    </button>
+                    <button class="diagram-btn" onclick="generateUMLDiagram('sequence')">
+                        <span class="diagram-icon">⏭️</span>
+                        <span>Sequence Diagram</span>
+                    </button>
+                    <button class="diagram-btn" onclick="generateUMLDiagram('class')">
+                        <span class="diagram-icon">📦</span>
+                        <span>Class Diagram</span>
+                    </button>
+                    <button class="diagram-btn" onclick="generateUMLDiagram('activity')">
+                        <span class="diagram-icon">🔄</span>
+                        <span>Activity Diagram</span>
+                    </button>
+                    <button class="diagram-btn" onclick="generateUMLDiagram('state')">
+                        <span class="diagram-icon">🔀</span>
+                        <span>State Diagram</span>
+                    </button>
+                </div>
+                <button class="btn-secondary" onclick="closeUMLDialog()">İptal</button>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <p>Yapay zeka analiz ediyor...</p>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script>
+        // Mermaid başlat
+        mermaid.initialize({ startOnLoad: false, theme: 'default' });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

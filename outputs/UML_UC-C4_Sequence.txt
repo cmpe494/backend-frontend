@@ -1,0 +1,47 @@
+```plantuml
+@startuml
+title Real-time Health Monitoring (UC-C4)
+
+actor "KioskClient" as KioskClient
+actor "GameClient-02" as GameClient
+participant SystemController
+participant Dashboard
+participant TechSupport as "Technical Support Team"
+
+' Basic Flow: Sağlıklı Nabız
+group Scenario: System updates status based on heartbeats
+    note over KioskClient: KioskClient starts sending heartbeats
+    loop Every 10 seconds
+        KioskClient -> SystemController: Send Heartbeat
+        activate SystemController
+        SystemController -> SystemController: Mark client status as "Active"
+        SystemController -> Dashboard: Update indicator to "Green Light"
+        deactivate SystemController
+    end
+end
+
+' İstisna Akış I1: Nabız Kesintisi
+group Scenario: Missing heartbeats trigger passive status
+    note over GameClient: GameClient-02 (currently Active)
+    note over GameClient: GameClient-02 stops sending heartbeats
+    activate SystemController
+    loop 3 consecutive 10-second heartbeat intervals
+        SystemController -> SystemController: Monitor for heartbeat from GameClient-02
+        SystemController -[hidden]-> SystemController: (Heartbeat not received)
+    end
+    SystemController -> SystemController: Update GameClient-02 status to "Connection Lost/Passive"
+    SystemController -> Dashboard: Update indicator to "Red"
+    deactivate SystemController
+end
+
+' İstisna Akış I2: Kritik Alarm
+group Scenario: Prolonged downtime triggers alarm
+    note over SystemController: GameClient-02 has been "Passive" for more than 5 minutes
+    activate SystemController
+    SystemController -> SystemController: Trigger "Critical Alert"
+    SystemController -> TechSupport: Send Email/SMS Notification
+    deactivate SystemController
+end
+
+@enduml
+```

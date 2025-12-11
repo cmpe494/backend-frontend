@@ -1,0 +1,39 @@
+```plantuml
+@startuml
+' Declare participants
+actor Admin
+participant "Backend System" as Backend
+participant "Message Queue" as MQ
+participant "KioskClient" as Kiosk
+participant "GameClient" as Game
+
+' Basic Flow: Successful Distribution
+group Scenario: Distribute new pricing configuration
+
+    Admin -> Backend: 1. Admin saves new game prices (triggers distribution)
+    activate Backend
+
+    Backend -> MQ: 2. Publishes new pricing configuration message
+    activate MQ
+    note left of MQ: Message contains updated prices for games
+
+    par Clients consume and apply configuration
+        MQ -> Kiosk: 3a. Delivers configuration message
+        activate Kiosk
+        Kiosk -> Kiosk: 4a. Consumes message & applies new prices locally
+        Kiosk -> Backend: 5a. "Update Successful" acknowledgement
+        deactivate Kiosk
+    and
+        MQ -> Game: 3b. Delivers configuration message
+        activate Game
+        Game -> Game: 4b. Consumes message & applies new prices locally
+        Game -> Backend: 5b. "Update Successful" acknowledgement
+        deactivate Game
+    end
+
+    deactivate MQ
+    deactivate Backend
+
+end
+@enduml
+```

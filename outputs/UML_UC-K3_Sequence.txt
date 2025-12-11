@@ -1,0 +1,60 @@
+```plantuml
+@startuml
+' Participants in the system interaction
+participant Kiosk as "Kiosk System"
+participant Backend as "Backend Service"
+participant Cache as "Local Cache"
+
+title Zone Capacity Check (UC-K3)
+
+' Background: User has selected a game and configuration
+note over Kiosk
+  User has selected a game
+  and configuration.
+  Kiosk prepares for capacity check.
+end note
+
+section Scenario: Zone is available for entry (Basic Flow)
+Kiosk -> Backend: Request zone capacity status
+activate Backend
+Backend --> Kiosk: Response: "Available"
+deactivate Backend
+Kiosk -> Kiosk: Allow user to proceed (to payment/game start)
+note right of Kiosk
+  User can continue
+  their journey.
+end note
+
+section Scenario: Zone is full (Alternative Flow)
+Kiosk -> Backend: Request zone capacity status
+activate Backend
+Backend --> Kiosk: Response: "Full"
+deactivate Backend
+Kiosk -> Kiosk: Display "Zone is currently full, please wait" warning
+Kiosk -> Kiosk: Do not allow game to start
+note right of Kiosk
+  User is blocked from
+  starting the game.
+end note
+
+section Scenario: Zone check fails due to connection error (Exception Flow I1)
+Kiosk -> Backend: Request zone capacity status
+activate Backend
+' Representing a timeout where the Kiosk doesn't receive a timely response
+Kiosk <--x Backend: Timeout (Backend Zone Service unresponsive)
+deactivate Backend
+note over Kiosk: Backend Zone Service timed out
+Kiosk -> Cache: Retrieve "Last known status"
+activate Cache
+Cache --> Kiosk: Return cached status (e.g., "Available", "Full")
+deactivate Cache
+Kiosk -> Kiosk: Proceed based on cached value
+note right of Kiosk
+  System takes action based on
+  the retrieved cached status,
+  e.g., allow if cached "Available",
+  warn if cached "Full".
+end note
+
+@enduml
+```

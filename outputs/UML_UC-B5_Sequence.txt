@@ -1,0 +1,71 @@
+```plantuml
+@startuml
+' Declare participants
+actor User
+participant "Frontend (UI)" as UI
+participant "Backend Service" as Backend
+participant "Cache System" as Cache
+database "Database" as DB
+participant "PDF Generator" as PDFGen
+
+' ----------------------------------------------------
+' Scenario: Generating a performance report
+' Background: Given the user is logged in and on the "Reports" panel
+' ----------------------------------------------------
+note over User, UI: Scenario: Generating a performance report
+note right of UI: (User is on "Reports" panel)
+
+User -> UI: Select "Daily Revenue Report" for current date
+User -> UI: Click "Generate Report"
+UI -> Backend: RequestReport(reportType="Daily Revenue", date=current)
+
+Backend -> Cache: Check(reportType, date)
+
+alt Valid cached data found
+    Cache --> Backend: CachedData
+else No valid cached data
+    Cache --> Backend: NoData (Cache Miss)
+    Backend -> DB: QueryReportData(reportType, date)
+    DB --> Backend: RawReportData
+end
+
+Backend --> UI: DisplayReportData(data)
+UI -> User: Display Report (within 5 seconds)
+
+' ----------------------------------------------------
+' Scenario: Unauthorized access to sensitive reports
+' ----------------------------------------------------
+note over User, UI: Scenario: Unauthorized access to sensitive reports
+note right of User: (User has role "Manager")
+
+User -> UI: Attempt to access "Full Audit Log"
+UI -> Backend: RequestReport(reportType="Full Audit Log", userRole="Manager")
+
+Backend -> Backend: Perform Authorization Check (for "Full Audit Log" access)
+alt User role is Admin (allowed)
+    Backend -> DB: QueryReportData("Full Audit Log")
+    DB --> Backend: RawAuditLogData
+    Backend --> UI: DisplayReportData(auditLogData)
+    UI -> User: Display Full Audit Log
+else User role is Manager (denied)
+    Backend --> UI: AccessDeniedError("Full Audit Log access is Admin only")
+    UI -> User: Display "Access Denied" error message
+end
+
+' ----------------------------------------------------
+' Scenario: Exporting report to PDF
+' ----------------------------------------------------
+note over User, UI: Scenario: Exporting report to PDF
+note right of UI: (A report is currently displayed)
+
+User -> UI: Click "Download as PDF"
+UI -> Backend: RequestPDFExport(reportId) ' Backend identifies the displayed report
+
+Backend -> Backend: Retrieve Report Data (if not already fetched/cached)
+Backend -> PDFGen: GeneratePDF(reportData)
+PDFGen --> Backend: PDFFileContent
+Backend --> UI: SendPDFForDownload(PDFFileContent, filename="report.pdf")
+UI -> User: Trigger PDF download
+
+@enduml
+```

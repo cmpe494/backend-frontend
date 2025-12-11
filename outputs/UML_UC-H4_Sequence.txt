@@ -1,0 +1,46 @@
+```plantuml
+@startuml
+title Score Validation and Anomaly Filtering (UC-H4)
+
+participant "Backend" as Backend
+participant "System" as System
+participant "Validation Service" as ValidationService
+participant "Cache" as Cache
+participant "User Interface" as UI
+
+' Basic Flow Start: System receives raw scores
+Backend -> System: sendRawScores(rawScores)
+activate System
+
+alt Displaying only validated scores (Basic Flow)
+    System -> ValidationService: validateScores(rawScores)
+    activate ValidationService
+    ValidationService --> System: returnValidationResults(validatedScores, suspiciousScores, invalidScores)
+    deactivate ValidationService
+    System -> System: filterSuspiciousAndInvalidScores()
+    System -> UI: displayScores(cleanScores)
+
+else Fallback when validation service is down (Alternative Flow A1)
+    System -> ValidationService: validateScores(rawScores)
+    activate ValidationService
+    ValidationService -[#red]> System: Service Unavailable / Timeout Error
+    deactivate ValidationService
+    System -> Cache: getLastSuccessfullyValidatedScores()
+    activate Cache
+    Cache --> System: return(cachedScores)
+    deactivate Cache
+    System -> UI: displayWarning("Verification service unavailable", cachedScores)
+
+else All scores rejected by validation (Alternative Flow A2)
+    System -> ValidationService: validateScores(rawScores)
+    activate ValidationService
+    ValidationService --> System: returnValidationResults(emptyValidatedScores, allScoresRejected)
+    deactivate ValidationService
+    System -> UI: displayMessage("No validated scores available")
+    note right of System: Raw/unverified data is NOT displayed
+
+end
+
+deactivate System
+@enduml
+```

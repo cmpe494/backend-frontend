@@ -1,0 +1,40 @@
+```plantuml
+@startuml
+title Game End and Score Submission (UC-G3)
+
+participant GameClient
+participant "Backend Score Service" as BackendScoreService
+
+autonumber
+
+note over GameClient: Pre-condition: Game objective completed or time expired
+
+GameClient -> GameClient: Calculates final score
+
+alt Basic Flow: Successful Score Submission
+    activate GameClient
+    GameClient -> BackendScoreService: Submit Score Payload (score, playerID, timestamp, etc.)
+    activate BackendScoreService
+    note right of BackendScoreService: Validate score against game rules and anti-cheat policies
+    BackendScoreService --> BackendScoreService: Score validation successful
+    BackendScoreService --> GameClient: Score Accepted (Status 200 OK)
+    deactivate BackendScoreService
+    GameClient -> GameClient: Close session locally
+    GameClient -> GameClient: Transition to "Idle" state
+    deactivate GameClient
+
+else Istisna Akış I1: Backend Doğrulama Hatası
+    activate GameClient
+    GameClient -> BackendScoreService: Submit Score Payload (score, playerID, timestamp, etc.)
+    activate BackendScoreService
+    note right of BackendScoreService: Score fails validation (e.g., suspicious value, invalid format)
+    BackendScoreService --> BackendScoreService: Score validation failed
+    BackendScoreService --> GameClient: Verification Error (Status 400 Bad Request, "Invalid Score")
+    deactivate BackendScoreService
+    GameClient -> GameClient: Mark score as "Pending Review" locally
+    note over GameClient: Session data retained; player notified of review status.
+    deactivate GameClient
+end
+
+@enduml
+```

@@ -1,0 +1,88 @@
+```plantuml
+@startuml
+' Diagram for Scenario: Sync changes from both directions
+title Scenario: Sync changes from both directions
+
+participant "Local System" as Local
+participant "Cloud System" as Cloud
+participant "Sync Engine" as SyncEngine
+
+Local -> Local: Modify Record A (different from Cloud's)
+Cloud -> Cloud: Modify Record B (different from Local's)
+
+note over Local: Record A state changed locally
+note over Cloud: Record B state changed in cloud
+
+Local -[#blue]> SyncEngine: Notify change for Record A
+Cloud -[#blue]> SyncEngine: Notify change for Record B
+
+activate SyncEngine
+SyncEngine -> SyncEngine: Detect changes for Record A and Record B
+SyncEngine --> Cloud: Apply update for Record A (from Local)
+SyncEngine --> Local: Apply update for Record B (from Cloud)
+SyncEngine --> Local: Mark Record B as "Synced"
+SyncEngine --> Cloud: Mark Record A as "Synced"
+deactivate SyncEngine
+@enduml
+
+@startuml
+' Diagram for Scenario: Handling concurrent updates on the same data
+title Scenario: Handling concurrent updates on the same data
+
+participant "Local System" as Local
+participant "Cloud System" as Cloud
+participant "Sync Engine" as SyncEngine
+actor Admin
+
+Local -> Local: Edit Record X
+Cloud -> Cloud: Edit Record X
+
+note over Local, Cloud: Edits occur simultaneously, triggering synchronization
+
+Local -[#blue]> SyncEngine: Notify change for Record X (Local version)
+Cloud -[#blue]> SyncEngine: Notify change for Record X (Cloud version)
+
+activate SyncEngine
+SyncEngine -> SyncEngine: Identify "Data Conflict" for Record X
+SyncEngine -> SyncEngine: Apply predefined rule (e.g., "Last Write Wins" or "Cloud Wins")
+SyncEngine -> SyncEngine: Log resolution action
+
+alt Manual intervention is required
+    SyncEngine -> Admin: Notify Admin for manual intervention
+else No manual intervention needed
+    SyncEngine --> Local: Apply resolved state of Record X
+    SyncEngine --> Cloud: Apply resolved state of Record X
+    SyncEngine --> Local: Mark Record X as "Synced"
+    SyncEngine --> Cloud: Mark Record X as "Synced"
+end
+deactivate SyncEngine
+@enduml
+
+@startuml
+' Diagram for Scenario: Detecting unauthorized data manipulation during sync
+title Scenario: Detecting unauthorized data manipulation during sync
+
+participant "Local System" as Local
+participant "Cloud System" as Cloud
+participant "Sync Engine" as SyncEngine
+actor Admin
+
+box "Synchronization Process"
+    Local -[#blue]> SyncEngine: Send data packet for synchronization
+    ' Or Cloud System sends data for sync.
+    note over SyncEngine: Processing incoming data packet
+end box
+
+activate SyncEngine
+alt System detects suspicious data signature
+    SyncEngine -> SyncEngine: Detect suspicious data signature
+    SyncEngine -> SyncEngine: Immediately abort synchronization
+    SyncEngine -> Admin: Raise "Security Alert" (with details)
+    SyncEngine -> SyncEngine: Block compromised data packet
+else No suspicious signature detected
+    SyncEngine -> SyncEngine: Data signature is valid
+    SyncEngine -> SyncEngine: Continue normal synchronization process
+end
+deactivate SyncEngine
+@enduml
+```

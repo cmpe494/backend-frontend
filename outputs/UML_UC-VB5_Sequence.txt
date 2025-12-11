@@ -1,0 +1,81 @@
+```plantuml
+@startuml
+!theme mars
+
+participant "Central System" as CS order 0
+participant "System Unit" as SU order 1
+box "System Unit Internal" #LightBlue
+    participant "Network Module" as NM order 2
+    participant "Update Handler" as UH order 3
+    participant "Local Database" as DB order 4
+    participant "Error Logger" as EL order 5
+end box
+
+' Pre-condition: Central System has released a new "Campaign Update"
+CS -> SU: Notify "New 'Campaign Update' Available"
+
+activate SU
+
+alt Successfully receive and apply update package (Scenario: Basic Flow)
+    SU -> NM: Request Update Package Download
+    activate NM
+    NM -> CS: Download Update Package
+    activate CS
+    CS --> NM: Update Package Data
+    deactivate CS
+    NM --> SU: Package Downloaded Successfully
+    deactivate NM
+
+    SU -> UH: Parse and Apply Data
+    activate UH
+    UH -> DB: Store Products & Campaigns
+    activate DB
+    DB --> UH: Data Applied Confirmation
+    deactivate DB
+    UH --> SU: Data Applied Successfully
+    deactivate UH
+
+    SU -> CS: "Update Completed" Acknowledgement
+    deactivate SU
+
+else Network failure during package download (Scenario: Alternatif Akış 3a)
+    SU -> NM: Attempt Update Package Download
+    activate NM
+    NM --x CS: Download Interrupted or Fails
+    NM --> SU: <<Error>> Network Download Failure
+    deactivate NM
+    SU -> SU: Trigger Retry Mechanism
+    SU -> EL: Log "Network Error"
+    activate EL
+    EL --> SU: "Network Error" Logged
+    deactivate EL
+    deactivate SU
+
+else Handling corrupted update data (Scenario: İstisna Akış 4a)
+    SU -> NM: Request Update Package Download
+    activate NM
+    NM -> CS: Download Update Package
+    activate CS
+    CS --> NM: Update Package Data (Corrupted)
+    deactivate CS
+    NM --> SU: Package Downloaded
+    deactivate NM
+
+    SU -> UH: Process Received Data
+    activate UH
+    alt Detects format error or inconsistency
+        UH -> UH: Quarantine Corrupted Data
+        UH -> EL: Log "Data Integrity Error"
+        activate EL
+        EL --> UH: "Data Integrity Error" Logged
+        deactivate EL
+        UH --> SU: <<Error>> Data Corruption Detected
+        SU -> CS: Notify "Data Processing Failure"
+        SU -> SU: Continue operating with valid existing data
+    end
+    deactivate UH
+    deactivate SU
+end
+
+@enduml
+```

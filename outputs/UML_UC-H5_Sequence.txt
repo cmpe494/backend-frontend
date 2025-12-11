@@ -1,0 +1,106 @@
+```plantuml
+@startuml
+title Offline Cache Display (UC-H5) Interaction Flows
+
+actor User
+participant "Highscore Display System" as System
+participant "Network Monitor" as Network
+participant "Local Storage" as Cache
+participant "API Service" as API
+participant "User Interface" as UI
+participant "Retry Mechanism" as Retry
+
+autonumber
+
+== Scenario: Serving content from local cache ==
+// Basic Flow: Offline Gösterim
+
+User -> System: Request display refresh (e.g., page load)
+activate System
+
+System -> Network: Check network status
+activate Network
+Network --> System: Network status: Down
+deactivate Network
+note right of System: Network connection is lost (Given)
+
+alt Network is Down
+    System -> Cache: Load data
+    activate Cache
+    Cache --> System: Return cached data
+    deactivate Cache
+    note right of System: Data loaded from "Local Storage" (Then)
+
+    System -> UI: Render score table (from cached data)
+    activate UI
+    System -> UI: Display "Offline Mode" badge
+    UI --> System: UI updated: Score table rendered & badge displayed
+    deactivate UI
+else Network is Up
+    ' This path leads to normal online flow, not covered by this specific scenario
+end
+
+deactivate System
+
+== Scenario: Auto-recovery when network returns ==
+// Basic Flow: Yeniden Bağlanma (Reconnection)
+
+note over System, UI: System is in "Offline Mode" (Given)
+
+Network -> System: Network connection restored (Event)
+activate System
+
+System -> API: Fetch fresh data
+activate API
+API --> System: Return fresh data
+deactivate API
+note right of System: System automatically fetches fresh data (Then)
+
+System -> UI: Update score table (with fresh data)
+activate UI
+System -> UI: Remove "Offline Mode" badge
+UI --> System: UI updated: Screen updated & badge removed
+deactivate UI
+
+deactivate System
+
+== Scenario: No cache available during outage ==
+// Alternatif Akış A1: Cache Boş
+
+note over System, Cache: Local cache is empty (Given)
+note over System, Network: Network is down (Given)
+
+User -> System: Request display scores
+activate System
+
+System -> Network: Check network status
+activate Network
+Network --> System: Network status: Down
+deactivate Network
+
+alt Network is Down
+    System -> Cache: Load data
+    activate Cache
+    Cache --> System: No data found (cache empty)
+    deactivate Cache
+
+    alt Cache is empty
+        System -> UI: Display "Service Unavailable" screen
+        activate UI
+        UI --> System: Screen displayed
+        deactivate UI
+        note right of System: Generic "Service Unavailable" screen shown (Then)
+
+        System -> Retry: Initiate background connection retry
+        activate Retry
+        note right of Retry: Retries connection in background (And)
+        ' When retry succeeds, it might trigger similar flow to "Auto-recovery"
+    else Cache has data
+        ' This path is handled by Scenario: Serving content from local cache
+    end
+end
+
+deactivate System
+
+@enduml
+```

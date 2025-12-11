@@ -1,0 +1,50 @@
+```plantuml
+@startuml
+!pragma layout smetana
+
+actor Admin as "System Administrator"
+boundary Dashboard as "Monitoring Dashboard"
+control MonitoringService as "Monitoring System"
+collections DeviceAgent as "Connected Device Agent"
+database PersistenceLayer as "Persistence Layer"
+entity Logger as "Logging Service"
+
+Admin -> Dashboard: Views Monitoring Dashboard (Background)
+
+Dashboard -> MonitoringService: Request All Device Statuses
+
+activate MonitoringService
+
+loop For each connected agent
+    MonitoringService -> DeviceAgent: Poll Status Request
+
+    activate DeviceAgent
+    alt Basic Flow: Dashboard displays correct device statuses
+        DeviceAgent --> MonitoringService: Valid Status Data (e.g., Online, Racing, Good)
+        deactivate DeviceAgent
+        MonitoringService -> Dashboard: Update Display Data (Live Status)
+
+    else Exception Flow 2a: Handling unreachable devices
+        DeviceAgent --[dotted]> MonitoringService: No Response (Timeout)
+        deactivate DeviceAgent
+        MonitoringService -> MonitoringService: Mark device as unreachable (e.g., "Kiosk-03")
+        MonitoringService -> Dashboard: Update Device Status ("Offline" / "Unknown", Warning Icon)
+
+    else Exception Flow 3a: Handling inconsistent status data
+        DeviceAgent --> MonitoringService: Malformed Status Data
+        deactivate DeviceAgent
+        MonitoringService -> Logger: Log "Data Integrity Warning"
+        MonitoringService -> PersistenceLayer: Retrieve Last Known Valid Status (for this device)
+        activate PersistenceLayer
+        PersistenceLayer --> MonitoringService: Last Known Valid Status + Timestamp
+        deactivate PersistenceLayer
+        MonitoringService -> Dashboard: Update Display Data (Stale Status, Staleness Indicator)
+    end
+end
+
+deactivate MonitoringService
+
+Dashboard --> Admin: Display Monitoring Data (Live / Offline / Stale)
+
+@enduml
+```

@@ -1,0 +1,72 @@
+```plantuml
+@startuml
+title System Configuration Management - Component Interaction Flow
+
+actor Admin
+participant "User Interface (UI)" as UI
+box "Backend Services" #LightBlue
+    participant "Configuration Service" as ConfigService
+    participant "Business Rule Engine" as BRE
+    database "Configuration Database" as DB
+    participant "Config Distribution Service" as DistService
+end box
+participant "Relevant Components" as OtherComponents
+
+Admin -> UI: Access Configuration Menu (Pre-condition: logged in, authorized)
+activate Admin
+activate UI
+UI --> Admin: Display current settings (e.g., Game Price: 10.00, Zone Capacity: 50)
+
+Admin -> UI: Input new value and save changes
+note right of UI: Admin changes "<setting>" to "<new_value>" \n(e.g., "Game Price" to "15.00" or "Zone Capacity" to "-5")\nand clicks "Save"
+deactivate UI
+
+activate UI
+UI -> ConfigService: Request config update (setting, new_value)
+deactivate UI
+
+activate ConfigService
+ConfigService -> BRE: Validate new value against business rules
+activate BRE
+
+alt Successful Update (Scenario: Admin updates configuration settings)
+    BRE --> ConfigService: Validation successful
+    deactivate BRE
+
+    ConfigService -> DB: Update configuration record (setting, new_value)
+    activate DB
+    DB --> ConfigService: Record updated
+    deactivate DB
+
+    ConfigService -> DistService: Notify config change (setting, new_value)
+    activate DistService
+    loop For each relevant component
+        DistService -> OtherComponents: Distribute new configuration
+        activate OtherComponents
+        OtherComponents --> DistService: Configuration received/applied
+        deactivate OtherComponents
+    end
+    DistService --> ConfigService: Distribution initiated
+    deactivate DistService
+
+    ConfigService --> UI: Config update successful
+    deactivate ConfigService
+    activate UI
+    UI --> Admin: Display "Settings updated successfully" message
+    deactivate UI
+
+else Invalid Configuration (Scenario: Attempt to save invalid configuration)
+    BRE --> ConfigService: Validation failed (e.g., "Invalid numeric value", "Business rule violation")
+    deactivate BRE
+
+    ConfigService --> UI: Reject update, send error message
+    deactivate ConfigService
+    activate UI
+    UI --> Admin: Display "Invalid numeric value" or "Business rule violation" error
+    deactivate UI
+    note right of DB: Database remains unchanged
+end
+
+deactivate Admin
+@enduml
+```

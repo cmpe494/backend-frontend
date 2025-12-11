@@ -1,0 +1,38 @@
+```plantuml
+@startuml
+' Sequence Diagram for "Updating permissions for a role"
+
+title Sequence Diagram: Updating permissions for a role
+
+actor Admin
+participant Frontend as "Role Management Screen"
+participant Backend as "Role Management Service"
+database Database as "Permissions DB"
+
+Admin -> Frontend: Navigates to "Role Management" screen
+activate Frontend
+
+Admin -> Frontend: Selects role "Cashier"
+Admin -> Frontend: Adds permission "View Reports"
+Admin -> Frontend: Clicks "Save Changes"
+
+Frontend -> Backend: PUT /roles/cashier/permissions\n{add: "View Reports"}
+activate Backend
+note right of Backend
+  Validate request,
+  check business rules
+end note
+
+Backend -> Database: Update role 'Cashier' with 'View Reports' permission
+activate Database
+Database --> Backend: Update successful
+deactivate Database
+
+Backend --> Frontend: HTTP 200 OK\n{message: "Permissions updated successfully"}
+deactivate Backend
+
+Frontend -> Admin: Displays "Permissions updated successfully" message
+deactivate Frontend
+
+@enduml
+```

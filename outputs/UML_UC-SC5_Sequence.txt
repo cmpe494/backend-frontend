@@ -1,0 +1,61 @@
+```plantuml
+@startuml
+title Central Asset Distribution (UC-SC5)
+
+actor Admin
+participant CentralSystem
+participant Kiosk as "Target Device (Kiosk)"
+participant AdminDashboard
+
+activate Admin
+Admin -> CentralSystem: Select "Game_Update_v2.zip"
+Admin -> CentralSystem: Select target group "All Kiosks"
+Admin -> CentralSystem: Start deployment
+
+activate CentralSystem
+CentralSystem -> CentralSystem: Apply bandwidth optimization strategy
+
+loop for each Kiosk in "All Kiosks"
+    activate Kiosk
+    CentralSystem -> Kiosk: Initiate File Transfer (Game_Update_v2.zip)
+    note right: Transfer using optimized bandwidth
+
+    group Network Interruption (Scenario: Network interruption pauses download)
+        Kiosk -->> CentralSystem: Download in progress (e.g., 50%)
+        alt Network connection drops for Kiosk
+            Kiosk x-- CentralSystem: Connection Lost (Timeout)
+            CentralSystem -> CentralSystem: Detect connection loss, mark download as paused for Kiosk
+            note right: Download state stored: 50%
+            CentralSystem -> AdminDashboard: Update Kiosk status: "Download Paused (50%)"
+            Kiosk -->> CentralSystem: Connection restored
+            CentralSystem -> Kiosk: Resume File Transfer (from 50%)
+        else No interruption
+            CentralSystem -> Kiosk: Continue File Transfer
+        end
+    end
+
+    Kiosk -> Kiosk: Receive & Verify File
+    CentralSystem --> Kiosk: File Transfer Complete
+
+    group Installation Process (Scenario: Installation failure due to disk space)
+        Kiosk -> Kiosk: Attempt to install update
+        alt Insufficient disk space
+            Kiosk -> Kiosk: Disk Space Check Failed
+            Kiosk -> CentralSystem: Report "Installation Failed: Disk Full"
+            CentralSystem -> AdminDashboard: Update Kiosk status: "Installation Failed: Disk Full"
+            AdminDashboard -> AdminDashboard: Highlight failure on dashboard
+        else Disk space sufficient
+            Kiosk -> Kiosk: Install Update (Game_Update_v2)
+            Kiosk -> CentralSystem: Report "Installation Complete"
+        end
+    end
+    deactivate Kiosk
+    CentralSystem -> AdminDashboard: Aggregate status updates for Kiosk
+end
+
+Admin <-- CentralSystem: Deployment Summary (e.g., All Kiosks: X complete, Y failed)
+deactivate CentralSystem
+deactivate Admin
+
+@enduml
+```

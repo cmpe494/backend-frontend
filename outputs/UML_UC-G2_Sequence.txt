@@ -1,0 +1,63 @@
+```plantuml
+@startuml
+title Scenario: Periodic telemetry sending and acknowledgement
+
+participant GameClient
+participant "Backend Telemetry Service" as BackendService
+
+activate GameClient
+GameClient -> GameClient: Generates telemetry data (FPS, player position, health)
+GameClient -> BackendService: Send Telemetry Data Packet
+activate BackendService
+BackendService --> GameClient: Return "Acknowledgement" (ACK) signal
+deactivate BackendService
+GameClient -> GameClient: Clear sent data from memory
+deactivate GameClient
+
+@enduml
+```
+
+```plantuml
+@startuml
+title Scenario: Queue telemetry when connection is lost
+
+participant GameClient
+box "GameClient Internal"
+    participant "Local Telemetry Queue" as LocalQueue
+end box
+participant Network
+participant "Backend Telemetry Service" as BackendService
+
+activate GameClient
+GameClient -> Network: Attempt to send telemetry data
+activate Network
+
+alt Network connection is lost
+    Network --x GameClient: Connection failure / Timeout
+    deactivate Network
+    GameClient -> LocalQueue: Add telemetry data to queue
+    note right of LocalQueue: Data is stored locally for later transmission
+
+    loop Retry sending until success
+        GameClient -> Network: Attempt to re-establish connection
+        activate Network
+        alt Connection restored
+            Network --> GameClient: Connection re-established
+            deactivate Network
+            GameClient -> LocalQueue: Retrieve queued data
+            LocalQueue --> GameClient: Queued Telemetry Data
+            GameClient -> BackendService: Send Queued Telemetry Data
+            activate BackendService
+            BackendService --> GameClient: "Acknowledgement" (ACK)
+            deactivate BackendService
+            break
+        else Connection still lost
+            Network --x GameClient: Connection failure / Timeout
+            deactivate Network
+            note right of GameClient: Wait and retry later
+        end
+    end
+end
+deactivate GameClient
+@enduml
+```

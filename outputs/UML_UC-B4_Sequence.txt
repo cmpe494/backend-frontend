@@ -1,0 +1,96 @@
+```plantuml
+@startuml
+title Scenario: Processing financial transactions (Basic Flow)
+
+actor Operator
+participant Frontend
+participant TransactionService
+participant AuthService
+database CustomerDB
+participant FinancialJournalService
+
+Operator -> Frontend: Enter Customer ID/Transaction ID and transaction details (e.g., Load Points 500)
+activate Frontend
+Frontend -> Operator: Display confirmation prompt
+Operator -> Frontend: Confirm action
+Frontend -> TransactionService: ProcessTransaction(CustomerID, Type, Amount)
+activate TransactionService
+TransactionService -> AuthService: VerifyOperatorAuthority(OperatorID, TransactionType, Amount)
+activate AuthService
+AuthService --> TransactionService: AuthorityGranted
+deactivate AuthService
+TransactionService -> CustomerDB: BeginTransaction()
+activate CustomerDB
+TransactionService -> CustomerDB: UpdateCustomerBalance(CustomerID, Type, Amount)
+CustomerDB --> TransactionService: BalanceUpdated
+TransactionService -> CustomerDB: CommitTransaction()
+deactivate CustomerDB
+TransactionService -> FinancialJournalService: LogAction(TransactionDetails)
+activate FinancialJournalService
+FinancialJournalService --> TransactionService: ActionLogged
+deactivate FinancialJournalService
+TransactionService --> Frontend: TransactionComplete
+deactivate TransactionService
+Frontend --> Operator: Display "Transaction Complete" message
+deactivate Frontend
+
+@enduml
+
+@startuml
+title Scenario: Refund results in negative balance (Exception Flow I2)
+
+actor Operator
+participant Frontend
+participant TransactionService
+database CustomerDB
+
+Operator -> Frontend: Attempt Refund (Customer ID, Amount: 20.00)
+activate Frontend
+Frontend -> TransactionService: ProcessRefund(CustomerID, 20.00)
+activate TransactionService
+TransactionService -> CustomerDB: GetCustomerBalance(CustomerID)
+activate CustomerDB
+CustomerDB --> TransactionService: Return Balance: 10.00
+deactivate CustomerDB
+TransactionService -> TransactionService: Check for Sufficient Funds (10.00 - 20.00 < 0)
+alt Insufficient funds
+    TransactionService --> Frontend: RejectTransaction("Insufficient funds for refund")
+    deactivate TransactionService
+    Frontend --> Operator: Display "Insufficient funds for refund" error
+else Sufficient funds
+    'This path is not taken in this scenario
+end
+deactivate Frontend
+
+@enduml
+
+@startuml
+title Scenario: Database error triggers rollback (Exception Flow I3)
+
+participant TransactionService
+database CustomerDB
+participant AlertingService
+
+TransactionService -> CustomerDB: BeginTransaction()
+activate CustomerDB
+TransactionService -> CustomerDB: AttemptSaveTransactionData(TransactionDetails)
+activate CustomerDB
+alt Database connection error occurs
+    CustomerDB -[#red]> TransactionService: DatabaseConnectionError
+    deactivate CustomerDB
+    TransactionService -> CustomerDB: RollbackTransaction()
+    activate CustomerDB
+    CustomerDB --> TransactionService: RollbackComplete (Ensures user balance is not affected)
+    deactivate CustomerDB
+    TransactionService -> AlertingService: AlertTechnicalTeam("Database connection error during transaction save", ErrorDetails)
+    activate AlertingService
+    AlertingService --> TransactionService: AlertSent
+    deactivate AlertingService
+    TransactionService --> TransactionService: HandleSystemError()
+else Transaction saved successfully
+    'This path is not taken in this scenario
+end
+deactivate TransactionService
+
+@enduml
+```

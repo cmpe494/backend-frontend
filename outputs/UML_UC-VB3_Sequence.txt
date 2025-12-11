@@ -1,0 +1,114 @@
+```plantuml
+@startuml
+!pragma layout smetana
+
+title Central Configuration Management (UC-VB3) - Component Interaction Flow
+
+actor Admin as "System Administrator"
+participant "Central Management Console" as UI
+participant "Configuration Service" as ConfigService
+database "Central Database" as DB
+participant "Synchronization Service" as SyncService
+box "Managed Units"
+  participant "Unit-A" as UnitA
+  participant "Unit-B" as UnitB
+  participant "Other Units" as OtherUnits
+end box
+box "System Services"
+  participant "Logging Service" as Logging
+end box
+
+autonumber
+
+Admin -> UI: Logs into Central Management Console (Background: Admin is logged in)
+
+== Scenario: Update and propagate global settings ==
+note over Admin, UI: Admin updates and saves global settings
+Admin -> UI: Updates "Security Level" setting to "High"
+Admin -> UI: Clicks "Save Changes"
+
+UI -> ConfigService: Request: updateSetting("Security Level", "High")
+activate ConfigService
+  ConfigService -> DB: Save new setting value
+  activate DB
+  DB --> ConfigService: New value saved
+  deactivate DB
+
+  ConfigService -> SyncService: Trigger: initiateGlobalSync(newConfig)
+  activate SyncService
+    note over SyncService: Prepare configuration payload for distribution
+    SyncService -> UnitA: Distribute updated config
+    SyncService -> UnitB: Distribute updated config
+    SyncService -> OtherUnits: Distribute updated config
+    UnitA --> SyncService: Config applied
+    UnitB --> SyncService: Config applied
+    OtherUnits --> SyncService: Config applied
+    SyncService --> ConfigService: Synchronization Status: All units successful
+  deactivate SyncService
+
+ConfigService --> UI: Response: "Update successful"
+deactivate ConfigService
+UI --> Admin: Display: "Update successful" confirmation
+
+== Scenario: Validation of configuration values ==
+Admin -> UI: Enters text "ABC" into numeric field "Timeout Duration"
+UI -> UI: Perform client-side validation (e.g., input type check)
+alt Input is invalid (e.g., non-numeric in numeric field)
+  UI --> Admin: Display validation error: "Invalid format"
+else Input is valid
+  UI -> ConfigService: (Continue with update flow, not shown for this scenario)
+end
+
+== Scenario: Handling sync failures on specific units ==
+note over Admin, UI: Admin initiates another config update (for demonstration of failure)
+Admin -> UI: Updates another setting (e.g., "Network Policy")
+Admin -> UI: Clicks "Save Changes"
+
+UI -> ConfigService: Request: updateSetting("Network Policy", "Restricted")
+activate ConfigService
+  ConfigService -> DB: Save new setting value
+  activate DB
+  DB --> ConfigService: New value saved
+  deactivate DB
+
+  ConfigService -> SyncService: Trigger: initiateGlobalSync(newConfig)
+  activate SyncService
+    SyncService -> UnitA: Attempt to distribute updated config
+    SyncService -[#red]> UnitA: Synchronization Fails! (e.g., connection error)
+    SyncService -> UnitB: Attempt to distribute updated config
+    SyncService -[#red]> UnitB: Synchronization Fails! (e.g., invalid state)
+    SyncService -> OtherUnits: Distribute updated config
+    OtherUnits --> SyncService: Synchronization Successful
+
+    SyncService -> Logging: Record failure details for Unit-A, Unit-B (timestamp, error code)
+    activate Logging
+    Logging --> SyncService: Failure logs recorded
+    deactivate Logging
+
+    SyncService --> ConfigService: Report partial failure: {Unit-A: Failed, Unit-B: Failed, OtherUnits: Success}
+  deactivate SyncService
+
+ConfigService --> UI: Report sync failures to Console: {Unit-A: Failed, Unit-B: Failed, ...}
+deactivate ConfigService
+
+UI --> Admin: Display sync failures for "Unit-A" and "Unit-B"
+UI --> Admin: Provide detailed error logs (e.g., link to log view)
+UI --> Admin: Show "Manual Retry" option for failed units (Unit-A, Unit-B)
+
+Admin -> UI: Clicks "Manual Retry" for "Unit-A", "Unit-B"
+UI -> ConfigService: Request: retrySync(units=[Unit-A, Unit-B])
+activate ConfigService
+  ConfigService -> SyncService: Trigger: re-synchronizeUnits([Unit-A, Unit-B])
+  activate SyncService
+    SyncService -> UnitA: Retry distribution of config
+    UnitA --> SyncService: Retry Successful
+    SyncService -> UnitB: Retry distribution of config
+    UnitB --> SyncService: Retry Successful
+    SyncService --> ConfigService: Retry Status: All specified units successful
+  deactivate SyncService
+ConfigService --> UI: Confirmation: "Retry successful for Unit-A, Unit-B"
+deactivate ConfigService
+UI --> Admin: Display: "Retry successful for Unit-A, Unit-B"
+
+@enduml
+```

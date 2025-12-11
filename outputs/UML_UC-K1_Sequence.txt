@@ -1,0 +1,68 @@
+```plantuml
+@startuml
+!pragma layout smetana
+
+actor "Kiosk User" as User
+participant "Kiosk Terminal" as Kiosk
+participant "Backend Authentication Service" as Auth
+database "User Database" as DB
+
+title Kiosk User Authentication Flow (UC-K1)
+
+note over User, DB: **Background:**\nThe Kiosk terminal is active,\nconnected to the Backend Server,\nand the user is on the Kiosk welcome screen.
+
+== Scenario: Successful login via scanning method ==
+activate User
+User -> Kiosk: 1. Scans valid RF Card / QR Code
+activate Kiosk
+Kiosk -> Auth: 2. Send User ID data for authentication
+activate Auth
+Auth -> DB: 3. Verify user credentials and fetch details
+activate DB
+DB --> Auth: 4. User found, return user details and current balance
+deactivate DB
+Auth --> Kiosk: 5. Send User Details & Current Balance (Success)
+deactivate Auth
+Kiosk -> User: 6. Display Main Menu with User Details & Balance
+deactivate Kiosk
+deactivate User
+
+== Scenario: Card or Code cannot be read ==
+activate User
+User -> Kiosk: 1. Attempts to scan unreadable/damaged RF Card/QR Code
+activate Kiosk
+Kiosk --x Kiosk: 2. Fails to capture ID (Hardware/Read Error)
+Kiosk -> User: 3. Display "Read error, please try again" warning
+deactivate Kiosk
+User -> User: 4. User remains on welcome screen to retry
+deactivate User
+
+== Scenario: User not found in the database ==
+activate User
+User -> Kiosk: 1. Scans valid RF Card / QR Code
+activate Kiosk
+Kiosk -> Auth: 2. Send User ID data for authentication
+activate Auth
+Auth -> DB: 3. Verify user credentials and fetch details
+activate DB
+DB --> Auth: 4. User Not Found / Not Registered
+deactivate DB
+Auth --> Kiosk: 5. Send Error: "User not registered"
+deactivate Auth
+Kiosk -> User: 6. Display "User not registered" error message
+deactivate Kiosk
+User -> User: 7. User remains on welcome screen (No menu access)
+deactivate User
+
+== Scenario: System is offline during login attempt ==
+activate User
+User -> Kiosk: 1. Scans RF Card / QR Code
+activate Kiosk
+Kiosk x-- Auth: 2. Attempt to send User ID (Connection Lost to Backend Service)
+Kiosk -> User: 3. Display "Offline mode - Service unavailable" error message
+deactivate Kiosk
+User -> User: 4. Login attempt terminated, remains on welcome screen
+deactivate User
+
+@enduml
+```

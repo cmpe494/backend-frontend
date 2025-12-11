@@ -1,0 +1,52 @@
+```plantuml
+@startuml
+title Component Interaction Flow for Row-Based Data Retrieval
+
+actor User
+boundary UI as "User Interface"
+participant Application_Service as "Application Service"
+database Data_Source as "Data Source"
+participant Logger
+
+User -> UI: Initiates data retrieval (e.g., applies filter)
+
+alt Basic Flow: Fetch data matching specific criteria
+    UI -> Application_Service: Request data with criteria (e.g., "Date = Today")
+    activate Application_Service
+    Application_Service -> Data_Source: Execute query against data source (criteria)
+    activate Data_Source
+    Data_Source --> Application_Service: Return result set (rows matching criteria)
+    deactivate Data_Source
+    Application_Service --> UI: Return data for display
+    deactivate Application_Service
+    UI --> User: Display fetched data rows
+
+else Alternatif Akış 3a: Veri Kaynağı Erişim Hatası
+    UI -> Application_Service: Request data with criteria
+    activate Application_Service
+    Application_Service -> Data_Source: Attempt to query data source
+    activate Data_Source
+    Data_Source -[#red]> Application_Service: Connection Unavailable / Error
+    deactivate Data_Source
+    Application_Service -> Logger: Log "Data source access error"
+    activate Logger
+    Logger --> Application_Service: Logged successfully
+    deactivate Logger
+    Application_Service -[#red]> UI: Return generic error message
+    deactivate Application_Service
+    UI --> User: Display generic error message to user
+
+else Alternatif Akış 4a: Veri Bulunamadı
+    UI -> Application_Service: Request data with criteria (yields no results)
+    activate Application_Service
+    Application_Service -> Data_Source: Execute query against data source (criteria)
+    activate Data_Source
+    Data_Source --> Application_Service: Return empty set
+    deactivate Data_Source
+    Application_Service --> UI: Return "No data found matching criteria" message
+    deactivate Application_Service
+    UI --> User: Display "No data found matching criteria" message
+end
+
+@enduml
+```

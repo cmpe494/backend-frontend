@@ -1,0 +1,28 @@
+```plantuml
+@startuml
+actor User
+participant GameClient
+participant Backend
+participant KioskDisplay as "Kiosk Display"
+participant SystemOrchestrator as "System"
+
+title Game End and Score Display (Basic Flow)
+
+activate GameClient
+GameClient -> Backend: 1. Trigger "Game Over" event\n   + Send Score Data
+activate Backend
+Backend -> Backend: 2. Verify and Process Score
+Backend --> GameClient: 3. Return Processed Score
+deactivate Backend
+
+GameClient -> KioskDisplay: 4. Instruct to Display "Final Score" (processed)
+activate KioskDisplay
+KioskDisplay -> User: 5. Show "Final Score"
+deactivate GameClient
+
+note over KioskDisplay, SystemOrchestrator: 6. After a delay...
+SystemOrchestrator -> KioskDisplay: 7. Redirect to Main Screen
+deactivate KioskDisplay
+
+@enduml
+```

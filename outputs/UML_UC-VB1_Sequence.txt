@@ -1,0 +1,64 @@
+```plantuml
+@startuml
+!pragma layout smetana
+
+actor User as "User"
+participant "User Interface (UI)" as UI
+participant "Application Service" as AppService
+participant "Encryption Module" as EncModule
+database "Data Repository (DB)" as DB
+
+autonumber
+
+box "Scenario: Encrypt and save sensitive data" #LightBlue
+    activate User
+    User -> UI: Enters sensitive information (Credit Card, ID)
+    activate UI
+    User -> UI: Confirms save operation
+    UI -> AppService: saveSensitiveData(sensitiveData)
+    activate AppService
+    AppService -> EncModule: encryptData(sensitiveData)
+    activate EncModule
+    EncModule --> AppService: <<return>> encryptedData
+    deactivate EncModule
+    AppService -> DB: storeEncryptedData(encryptedData)
+    activate DB
+    DB --> AppService: <<return>> Data stored successfully
+    deactivate DB
+    AppService --> UI: <<return>> "Data saved successfully"
+    deactivate AppService
+    UI --> User: Displays "Data saved successfully" confirmation
+    deactivate UI
+    deactivate User
+end box
+
+box "Scenario: Encryption failure prevents storage" #LightCoral
+    activate User
+    User -> UI: Confirms save operation
+    activate UI
+    UI -> AppService: saveSensitiveData(sensitiveData)
+    activate AppService
+    AppService -> EncModule: encryptData(sensitiveData)
+    activate EncModule
+    EncModule x-- AppService: <<error>> Encryption failed
+    deactivate EncModule
+    AppService --[#red]x UI: <<return>> "Security check failed, please try again" (Aborts save)
+    deactivate AppService
+    UI --> User: Displays "Security check failed, please try again" error
+    deactivate UI
+    deactivate User
+end box
+
+box "Scenario: User cancels the operation" #LightGreen
+    activate User
+    User -> UI: Enters data
+    activate UI
+    User -> UI: Clicks "Cancel" or leaves screen
+    UI -> UI: Discard input data
+    deactivate UI
+    User --> User: (No data persisted)
+    deactivate User
+end box
+
+@enduml
+```

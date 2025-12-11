@@ -1,0 +1,50 @@
+```plantuml
+@startuml
+title UC-SC4: Remote Control Operations
+
+actor Admin as "System Administrator"
+participant "Management Dashboard" as Dashboard
+participant "Backend Service" as Backend
+participant "Target Device" as Device
+
+Admin -> Dashboard: Select device "<device_id>"
+note right: e.g., Kiosk-01, Kiosk-Legacy
+
+Admin -> Dashboard: Send "<command>" command
+note right: e.g., REBOOT, UPDATE_SOFTWARE
+
+activate Dashboard
+Dashboard -> Backend: Transmit remote command (device_id: "<device_id>", command: "<command>")
+
+activate Backend
+note right of Backend: Validate command, permissions,\nand establish secure channel
+
+Backend -> Device: Securely transmit command (command: "<command>")
+activate Device
+
+alt Successful Command Execution (Basic Flow)
+    note left of Device: Device executes command successfully
+    Device --> Backend: Command execution result ("<result>")
+    deactivate Device
+
+    Backend --> Dashboard: Command result ("<result>")
+    deactivate Backend
+
+    Dashboard --> Admin: Display command result ("<result>")
+    deactivate Dashboard
+    note right of Admin: Admin receives confirmation
+else Device Fails to Execute (Exception Flow 6a)
+    note left of Device: e.g., Kiosk-Legacy encounters internal error\nfor UPDATE_SOFTWARE command
+    Device --> Backend: Command Execution Failed: Error Code 500
+    deactivate Device
+
+    Backend --> Dashboard: Error: Command Execution Failed: Error Code 500
+    deactivate Backend
+
+    Dashboard --> Admin: Display error detail (Error Code 500)
+    deactivate Dashboard
+    note right of Admin: Admin sees detailed error on the dashboard
+end
+
+@enduml
+```

@@ -1,0 +1,76 @@
+```plantuml
+@startuml
+title Centralized Log Management - Component Interaction Flow (UC-SC2)
+
+' Define Participants
+actor Admin as "Administrator"
+participant Kiosk01 as "Kiosk-01 (Device)"
+participant LogGenerator as "Log Generator"
+participant LogSender as "Log Sender"
+participant CentralLogServer as "Central Log Server"
+database LocalBuffer as "Local Buffer"
+database LogDB as "Log Database"
+
+' === Basic Flow: Log Oluşturma ve Gönderme ===
+note over Kiosk01, LogDB: Scenario: Device sends logs to Central Server
+Kiosk01 -> LogGenerator: "User Login" event occurs
+LogGenerator -> LogSender: Generate Log Entry (with timestamp)
+LogSender -> CentralLogServer: Transmit Log
+activate CentralLogServer
+CentralLogServer -> LogDB: Store Log Entry
+activate LogDB
+LogDB --> CentralLogServer: Log Stored Confirmation
+deactivate LogDB
+CentralLogServer --> LogSender: Log Transmission Success
+deactivate CentralLogServer
+
+' === İstisna Akış 3a: Gönderim Hatası ve Retry ===
+note over LogSender, Administrator: Scenario: Retry mechanism for failed log transmission
+LogSender -> CentralLogServer: Attempt to send log (Initial transmission)
+
+alt Initial transmission successful
+    activate CentralLogServer
+    CentralLogServer -> LogDB: Store Log
+    activate LogDB
+    LogDB --> CentralLogServer: Log Stored Confirmation
+    deactivate LogDB
+    CentralLogServer --> LogSender: Log received successfully
+    deactivate CentralLogServer
+else Initial transmission failed (Connection to Central Log Server is down)
+    CentralLogServer --x LogSender: Connection failed
+    LogSender -> LocalBuffer: Store Log in Local Buffer
+    LogSender -> Administrator: Generate "Transmission Delayed" Warning
+
+    loop Periodically until success
+        LogSender -> CentralLogServer: Re-attempt to send log (from Local Buffer)
+        activate LogSender
+        alt Re-attempt successful (Connection restored)
+            activate CentralLogServer
+            CentralLogServer --> LogSender: Log received successfully
+            CentralLogServer -> LogDB: Store Log
+            activate LogDB
+            LogDB --> CentralLogServer: Log Stored Confirmation
+            deactivate LogDB
+            LogSender -> LocalBuffer: Remove log from Local Buffer
+            deactivate CentralLogServer
+            break ' Exit loop on success
+        else Re-attempt failed (Connection still down)
+            CentralLogServer --x LogSender: Re-attempt failed
+        end
+        deactivate LogSender
+    end
+end
+
+' === Basic Flow: Log Geri Çağırma (Retrieval) ===
+note over Admin, LogDB: Scenario: Admin requests logs from a specific device
+Admin -> CentralLogServer: Request logs for "GameClient-05"
+activate CentralLogServer
+CentralLogServer -> LogDB: Retrieve logs for "GameClient-05"
+activate LogDB
+LogDB --> CentralLogServer: Requested Logs (e.g., list of log entries)
+deactivate LogDB
+CentralLogServer --> Admin: Send logs to Admin's Dashboard for viewing
+deactivate CentralLogServer
+
+@enduml
+```

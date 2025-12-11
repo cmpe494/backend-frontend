@@ -1,0 +1,64 @@
+```plantuml
+@startuml
+title Highscore Display System - Loop Mechanism (UC-H2)
+
+' Declare participants
+participant HighscoreDisplaySystem as HDS
+participant DisplayTimer as Timer
+participant BackendService as Backend
+participant CacheService as Cache
+actor AdminConsole as Admin
+
+' Background: "Loop Mode" is active in configuration
+note over HDS: Loop Mode is active in configuration
+
+box "Scenario: Cycling through score categories (Basic Flow)"
+    autonumber "BF "
+    note left of Timer: Display timer for "Global" scope expires
+    Timer -> HDS: notifyTimerExpired("Global")
+    activate HDS
+    HDS -> HDS: switchViewTo("City")
+    HDS -> Backend: fetchScores("City")
+    activate Backend
+    Backend --> HDS: return scoreData("City")
+    deactivate Backend
+    HDS -> HDS: renderView("City", seamlessTransition)
+    deactivate HDS
+end box
+
+box "Scenario: Manually stopping the loop (Alternative Flow A1)"
+    autonumber "AF1 "
+    note over HDS: Loop is currently running
+    Admin -> HDS: sendCommand("Stop Loop")
+    activate HDS
+    HDS -> Timer: pauseLoop()
+    activate Timer
+    Timer --> HDS: ack: Loop paused
+    deactivate Timer
+    HDS -> HDS: fixViewOnCurrentScope()
+    deactivate HDS
+end box
+
+box "Scenario: Handling backend failure during transition (Exception Flow I1)"
+    autonumber "IF1 "
+    Timer -> HDS: notifyTimerExpired("City") ' System attempts to switch to "Zone"
+    activate HDS
+    HDS -> HDS: prepareSwitchTo("Zone")
+    HDS -> Backend: fetchScores("Zone")
+    activate Backend
+    Backend --[#red]> HDS: error: Failed to return data for "Zone"
+    deactivate Backend
+    HDS -> Cache: getCachedScores("Zone")
+    activate Cache
+    Cache --> HDS: return lastKnownScoreData("Zone")
+    deactivate Cache
+    HDS -> HDS: displayView("Zone", fromCache)
+    HDS -> Timer: continueLoopTimer()
+    activate Timer
+    Timer --> HDS: ack: Timer continued
+    deactivate Timer
+    deactivate HDS
+end box
+
+@enduml
+```

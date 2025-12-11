@@ -1,0 +1,76 @@
+```plantuml
+@startuml
+' Sequence Diagram for Secure Login and Session Management (UC-D1)
+
+' --- Participants ---
+actor User
+participant "Login Page UI" as LoginPage
+participant "Frontend Application" as FrontendApp
+participant "Backend Auth Service" as AuthService
+database "User/Role DB" as UserRoleDB
+participant "Dashboard UI" as DashboardUI
+
+' --- Scenario 1: User logs in and is redirected based on role ---
+group Basic Flow: Successful Login
+    User -> LoginPage: Accesses Login Page
+    activate LoginPage
+    LoginPage --> User: Displays login form
+
+    User -> LoginPage: Enters valid username/password
+    User -> LoginPage: Clicks "Login" button
+    deactivate LoginPage
+
+    LoginPage -> FrontendApp: Submit credentials (POST /login)
+    activate FrontendApp
+    FrontendApp -> AuthService: AuthenticateUser(username, password)
+    activate AuthService
+
+    AuthService -> UserRoleDB: Verify credentials and retrieve role
+    activate UserRoleDB
+    UserRoleDB --> AuthService: Credentials valid, role (<role>)
+    deactivate UserRoleDB
+
+    AuthService --> FrontendApp: Authentication success, session token, user role
+    deactivate AuthService
+
+    FrontendApp -> FrontendApp: Store session token, determine redirect path
+    FrontendApp -> DashboardUI: Redirect to <role_dashboard> (e.g., /cashier/dashboard)
+    deactivate FrontendApp
+    activate DashboardUI
+    DashboardUI --> User: Displays <role_dashboard>
+    deactivate DashboardUI
+end
+
+||| ' Separator for clarity between scenarios
+
+' --- Scenario 2: Session timeout warning and renewal ---
+group Basic Flow & A2: Session Timeout Warning and Renewal
+    ' Assuming User is already logged in and interacting with the system
+    note over User, FrontendApp: User is already logged in and active on a screen.
+    activate User
+    activate FrontendApp
+
+    loop Session monitoring by Frontend
+        FrontendApp -> FrontendApp: Check remaining session time
+        alt Session approaching timeout (e.g., 2 minutes left)
+            FrontendApp --> User: Display "Session ending soon" warning
+            User -> FrontendApp: Clicks "Extend Session"
+
+            FrontendApp -> AuthService: ExtendSession(session_token)
+            activate AuthService
+            AuthService -> AuthService: Reset session expiration for token
+            AuthService --> FrontendApp: Session extended confirmation
+            deactivate AuthService
+
+            FrontendApp -> FrontendApp: Reset local session timer
+            note right of FrontendApp: User remains on current screen
+        else Session is active
+            FrontendApp -> FrontendApp: Continue normal operation
+        end
+    end
+    deactivate FrontendApp
+    deactivate User
+end
+
+@enduml
+```
