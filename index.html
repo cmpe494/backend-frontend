@@ -1,52 +1,95 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BDD to Requirements Generator</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Mermaid.js kütüphanesi eklendi - UML diagramları için -->
+    <!-- Mermaid.js library - for UML diagrams -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🤖 BDD to Requirements Generator</h1>
-            <p>BDD senaryolarınızı yapay zeka ile teknik gereksinimlere dönüştürün</p>
+            <p>Convert your BDD scenarios into technical artifacts using AI</p>
         </header>
 
         <div class="main-content">
-            <!-- Sol Panel: BDD Girişi -->
+            <!-- Left Panel: BDD Input -->
             <div class="panel input-panel">
                 <div class="panel-header">
-                    <h2>📝 BDD Senaryosu</h2>
-                    <button class="btn-secondary" onclick="clearInput()">Temizle</button>
+                    <h2>📝 BDD Scenario</h2>
+                    <button class="btn-secondary" onclick="clearInput()">Clear</button>
                 </div>
+
+                <!-- ✅ Feature + Scenario Selection -->
+                <div class="picker-row">
+                    <div class="picker-grid">
+                        <div class="picker-col">
+                            <label for="featureSelect">
+                                📁 Select Feature
+                            </label>
+                            <select id="featureSelect" class="select" onchange="onFeatureChange()">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+
+                        <div class="picker-col">
+                            <label for="scenarioSelect">
+                                🎬 Select Scenario
+                            </label>
+                            <select id="scenarioSelect" class="select" onchange="onScenarioChange()" disabled>
+                                <option value="">Select a feature first</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="picker-actions">
+                        <button class="btn-secondary" onclick="loadSelectedScenarioToEditor()" id="loadScenarioBtn" disabled>
+                            ➕ Load Selected Scenario into Editor
+                        </button>
+                        <button class="btn-secondary" onclick="loadWholeFeatureToEditor()" id="loadFeatureBtn" disabled>
+                            📄 Load Entire Feature into Editor
+                        </button>
+                    </div>
+
+                    <small id="selectedInfo">
+                        No selection made.
+                    </small>
+                </div>
+                <!-- ✅ /Feature + Scenario Selection -->
+
                 <textarea 
                     id="bddInput" 
-                    placeholder="Feature: Kullanıcı Kaydı&#10;&#10;Scenario: Başarılı kayıt&#10;  Given kullanıcı kayıt sayfasında&#10;  When geçerli bilgiler girer&#10;  Then sistem kullanıcıyı kaydeder"
+                    placeholder="Feature: User Registration
+
+Scenario: Successful registration
+  Given the user is on the registration page
+  When valid information is entered
+  Then the system registers the user"
                 ></textarea>
                 
-                <!-- 3 buton eklendi: Requirements, Test Cases, UML Diagram -->
+                <!-- Action buttons -->
                 <div class="button-group">
                     <button class="btn-primary" onclick="generateRequirements()">
                         <span class="btn-icon">✨</span>
-                        Requirement Üret
+                        Generate Requirements
                     </button>
                     <button class="btn-primary btn-test" onclick="generateTestCases()">
                         <span class="btn-icon">🧪</span>
-                        Test Case Üret
+                        Generate Test Cases
                     </button>
                     <button class="btn-primary btn-uml" onclick="showUMLDialog()">
                         <span class="btn-icon">📊</span>
-                        UML Diagram Üret
+                        Generate UML Diagram
                     </button>
                 </div>
             </div>
 
-            <!-- Sağ Panel: Çıktılar -->
+            <!-- Right Panel: Outputs -->
             <div class="panel output-panel">
-                <!-- Tab yapısı eklendi -->
+                <!-- Tabs -->
                 <div class="tabs">
                     <button class="tab-btn active" onclick="switchTab('requirements')">📋 Requirements</button>
                     <button class="tab-btn" onclick="switchTab('testcases')">🧪 Test Cases</button>
@@ -58,15 +101,17 @@
                     <div class="panel-header">
                         <h2>📋 Requirements</h2>
                         <div class="action-buttons">
-                            <button class="btn-secondary" onclick="copyOutput('requirements')">📋 Kopyala</button>
-                            <button class="btn-secondary" onclick="downloadOutput('requirements')">💾 İndir</button>
+                            <button class="btn-secondary" onclick="copyOutput('requirements')">📋 Copy</button>
+                            <button class="btn-secondary" onclick="downloadOutput('requirements')">💾 Download</button>
                         </div>
                     </div>
                     <div id="requirements-output" class="output-content">
                         <div class="placeholder">
                             <div class="placeholder-icon">🎯</div>
-                            <p>Requirement'lar burada görünecek...</p>
-                            <p class="placeholder-hint">Sol taraftan BDD senaryonuzu girin ve "Requirement Üret" butonuna tıklayın</p>
+                            <p>Requirements will appear here...</p>
+                            <p class="placeholder-hint">
+                                Enter a BDD scenario on the left and click “Generate Requirements”
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -76,15 +121,17 @@
                     <div class="panel-header">
                         <h2>🧪 Test Cases</h2>
                         <div class="action-buttons">
-                            <button class="btn-secondary" onclick="copyOutput('testcases')">📋 Kopyala</button>
-                            <button class="btn-secondary" onclick="downloadOutput('testcases')">💾 İndir</button>
+                            <button class="btn-secondary" onclick="copyOutput('testcases')">📋 Copy</button>
+                            <button class="btn-secondary" onclick="downloadOutput('testcases')">💾 Download</button>
                         </div>
                     </div>
                     <div id="testcases-output" class="output-content">
                         <div class="placeholder">
                             <div class="placeholder-icon">🧪</div>
-                            <p>Test case'ler burada görünecek...</p>
-                            <p class="placeholder-hint">"Test Case Üret" butonuna tıklayın</p>
+                            <p>Test cases will appear here...</p>
+                            <p class="placeholder-hint">
+                                Click “Generate Test Cases”
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -94,25 +141,27 @@
                     <div class="panel-header">
                         <h2>📊 UML Diagram</h2>
                         <div class="action-buttons">
-                            <button class="btn-secondary" onclick="downloadDiagram()">💾 İndir PNG</button>
+                            <button class="btn-secondary" onclick="downloadDiagram()">💾 Download PNG</button>
                         </div>
                     </div>
                     <div id="uml-output" class="output-content">
                         <div class="placeholder">
                             <div class="placeholder-icon">📊</div>
-                            <p>UML Diagram burada görünecek...</p>
-                            <p class="placeholder-hint">"UML Diagram Üret" butonuna tıklayın ve diagram tipini seçin</p>
+                            <p>UML diagram will appear here...</p>
+                            <p class="placeholder-hint">
+                                Click “Generate UML Diagram” and select a diagram type
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- UML Dialog Modal eklendi -->
+        <!-- UML Dialog Modal -->
         <div id="umlDialog" class="modal hidden">
             <div class="modal-content">
-                <h2>📊 UML Diagram Tipi Seçin</h2>
-                <p>Hangi UML diagram tipini oluşturmak istersiniz?</p>
+                <h2>📊 Select UML Diagram Type</h2>
+                <p>Which UML diagram would you like to generate?</p>
                 <div class="diagram-options">
                     <button class="diagram-btn" onclick="generateUMLDiagram('usecase')">
                         <span class="diagram-icon">👤</span>
@@ -135,14 +184,14 @@
                         <span>State Diagram</span>
                     </button>
                 </div>
-                <button class="btn-secondary" onclick="closeUMLDialog()">İptal</button>
+                <button class="btn-secondary" onclick="closeUMLDialog()">Cancel</button>
             </div>
         </div>
 
         <!-- Loading Overlay -->
         <div id="loadingOverlay" class="loading-overlay hidden">
             <div class="loading-spinner"></div>
-            <p>Yapay zeka analiz ediyor...</p>
+            <p>AI is analyzing...</p>
         </div>
 
         <!-- Toast Notification -->
@@ -150,8 +199,15 @@
     </div>
 
     <script>
-        // Mermaid başlat
+        // Initialize Mermaid
         mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+        // Load feature list on page load
+        window.addEventListener("DOMContentLoaded", () => {
+            if (typeof loadFeatureList === "function") {
+                loadFeatureList();
+            }
+        });
     </script>
     <script src="script.js"></script>
 </body>

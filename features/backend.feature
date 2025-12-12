@@ -1,5 +1,140 @@
 @backend
 Feature: Backend Module Full AI Analysis (UC-B2 → UC-B6)
+################################################################################
+# UC-B1 – Staff Authentication and Session Management
+################################################################################
+
+@uc_b1 @requirement
+Scenario: UC-B1 Requirement Extraction
+  Given The BDD text to be analyzed is:
+    """
+    Feature: Staff Authentication and Session Management (UC-B1)
+      As an Operational Staff member (Cashier, Manager, Admin)
+      I want to log in securely
+      So that I can access the system functions according to my role
+
+      # Basic Flow: Successful Login
+      Scenario Outline: Successful login generates secure token
+        Given the user is on the login screen
+        When the user enters valid username "<username>" and password "<password>"
+        And clicks the "Login" button
+        Then the system should verify credentials against the database
+        And the system should authorize the user with role "<role>"
+        And the system should generate a valid "Session Token" (JWT)
+        And redirect the user to the "<dashboard_type>"
+
+        Examples:
+          | username | password | role    | dashboard_type  |
+          | user_csh | pass123  | Cashier | Cashier Panel   |
+          | user_adm | pass123  | Admin   | Admin Dashboard |
+
+      # Exception Flow I1: Brute-Force Protection
+      Scenario: Account lockout after repeated failed attempts
+        Given the user has failed to log in "4" times in the last "5 minutes"
+        When the user enters an invalid password for the 5th time
+        Then the system should lock the account automatically
+        And display a "Account locked for security reasons" message
+        And log this security event
+
+      # Exception Flow I3: Deactivated User
+      Scenario: Login attempt by a deactivated user
+        Given the user credentials are correct
+        But the user account status is set to "Passive" by Admin
+        When the user attempts to log in
+        Then the system should deny access
+        And display a "Account is deactivated" warning
+    """
+  When AI analyzes the BDD scenario and generates system requirements
+  Then The output should be saved as "Requirements_UC-B1.md"
+  And The file should contain at least "1" Functional Requirement (FR)
+
+@uc_b1 @testcase
+Scenario: UC-B1 Test Case Generation
+  Given The BDD text to be analyzed is:
+    """
+    Feature: Staff Authentication and Session Management (UC-B1)
+      As an Operational Staff member (Cashier, Manager, Admin)
+      I want to log in securely
+      So that I can access the system functions according to my role
+
+      # Basic Flow: Successful Login
+      Scenario Outline: Successful login generates secure token
+        Given the user is on the login screen
+        When the user enters valid username "<username>" and password "<password>"
+        And clicks the "Login" button
+        Then the system should verify credentials against the database
+        And the system should authorize the user with role "<role>"
+        And the system should generate a valid "Session Token" (JWT)
+        And redirect the user to the "<dashboard_type>"
+
+        Examples:
+          | username | password | role    | dashboard_type  |
+          | user_csh | pass123  | Cashier | Cashier Panel   |
+          | user_adm | pass123  | Admin   | Admin Dashboard |
+
+      # Exception Flow I1: Brute-Force Protection
+      Scenario: Account lockout after repeated failed attempts
+        Given the user has failed to log in "4" times in the last "5 minutes"
+        When the user enters an invalid password for the 5th time
+        Then the system should lock the account automatically
+        And display a "Account locked for security reasons" message
+        And log this security event
+
+      # Exception Flow I3: Deactivated User
+      Scenario: Login attempt by a deactivated user
+        Given the user credentials are correct
+        But the user account status is set to "Passive" by Admin
+        When the user attempts to log in
+        Then the system should deny access
+        And display a "Account is deactivated" warning
+    """
+  When AI extracts detailed test cases from the BDD scenario
+  Then The output should be saved as "TestCases_UC-B1.md"
+  And The file should contain at least "3" Test Cases (TC)
+
+@uc_b1 @uml
+Scenario: UC-B1 UML Diagram Generation - Sequence
+  Given The BDD text to be analyzed is:
+    """
+    Feature: Staff Authentication and Session Management (UC-B1)
+      As an Operational Staff member (Cashier, Manager, Admin)
+      I want to log in securely
+      So that I can access the system functions according to my role
+
+      # Basic Flow: Successful Login
+      Scenario Outline: Successful login generates secure token
+        Given the user is on the login screen
+        When the user enters valid username "<username>" and password "<password>"
+        And clicks the "Login" button
+        Then the system should verify credentials against the database
+        And the system should authorize the user with role "<role>"
+        And the system should generate a valid "Session Token" (JWT)
+        And redirect the user to the "<dashboard_type>"
+
+        Examples:
+          | username | password | role    | dashboard_type  |
+          | user_csh | pass123  | Cashier | Cashier Panel   |
+          | user_adm | pass123  | Admin   | Admin Dashboard |
+
+      # Exception Flow I1: Brute-Force Protection
+      Scenario: Account lockout after repeated failed attempts
+        Given the user has failed to log in "4" times in the last "5 minutes"
+        When the user enters an invalid password for the 5th time
+        Then the system should lock the account automatically
+        And display a "Account locked for security reasons" message
+        And log this security event
+
+      # Exception Flow I3: Deactivated User
+      Scenario: Login attempt by a deactivated user
+        Given the user credentials are correct
+        But the user account status is set to "Passive" by Admin
+        When the user attempts to log in
+        Then the system should deny access
+        And display a "Account is deactivated" warning
+    """
+  When AI generates a "Sequence Diagram" from the BDD scenario
+  Then The output should be saved as "UML_UC-B1_Sequence.txt"
+  And The file should contain valid PlantUML code
 
 ################################################################################
 # UC-B2 – System Configuration Management
@@ -75,11 +210,9 @@ Scenario: UC-B2 Test Case Generation
         And display an "Invalid numeric value" or "Business rule violation" error
         And the database should remain unchanged
     """
-  #burası farklı kısım 
-  
   When AI extracts detailed test cases from the BDD scenario
   Then The output should be saved as "TestCases_UC-B2.md"
-  And The file should contain at least "3" Test Cases (TC) 
+  And The file should contain at least "3" Test Cases (TC)
 
 @uc_b2 @uml
 Scenario: UC-B2 UML Diagram Generation - Sequence

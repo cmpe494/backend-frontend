@@ -1,21 +1,20 @@
 # System Requirements Specification
 
 ## 1. Functional Requirements (FR)
--   **[FR-001]** The system shall provide an authentication mechanism to ensure only logged-in users can access system functionalities. (Implicit from "Admin is logged in" in Background)
--   **[FR-002]** The system shall enforce authorization rules to ensure only authorized Admins can access the Configuration Menu. (From "authorized for the Configuration Menu" in Background)
--   **[FR-003]** The system shall allow an authorized Admin to modify configurable operational settings (e.g., Game Price, Zone Capacity). (From "When the Admin changes the '<setting>' to '<new_value>'" in Scenario Outline)
--   **[FR-004]** The system shall provide a mechanism for an Admin to save changes to configuration settings. (From "And saves the changes" in Scenario Outline)
--   **[FR-005]** The system shall validate new configuration values against predefined business rules prior to saving. (From "Then the system should validate the new value against business rules" in Scenario Outline)
--   **[FR-006]** The system shall store successfully validated and updated configuration settings in the database. (From "And update the database" in Scenario Outline)
--   **[FR-007]** The system shall distribute updated configuration settings to all relevant system components after successful storage. (From "And distribute the new config to relevant components" in Scenario Outline)
--   **[FR-008]** The system shall display a confirmation message, such as "Settings updated successfully", upon a successful configuration update. (From "And display a 'Settings updated successfully' message" in Scenario Outline)
--   **[FR-009]** The system shall reject configuration updates that violate business rules or data type constraints. (From "Then the system should reject the update" in Exception Flow)
--   **[FR-010]** The system shall display an informative error message, such as "Invalid numeric value" or "Business rule violation", when a configuration update fails due to validation errors. (From "And display an 'Invalid numeric value' or 'Business rule violation' error" in Exception Flow)
--   **[FR-011]** The system shall ensure that the database remains unchanged if a configuration update is rejected due to validation failure. (From "And the database should remain unchanged" in Exception Flow)
+
+-   **[FR-001]** The system shall authenticate Administrators.
+-   **[FR-002]** The system shall authorize Administrators for access to the Configuration Menu.
+-   **[FR-003]** The system shall display the Configuration Menu to authorized Administrators.
+-   **[FR-004]** The system shall allow Administrators to modify operational configuration settings (e.g., pricing, capacity).
+-   **[FR-005]** The system shall provide a mechanism for Administrators to save configuration changes.
+-   **[FR-006]** The system shall validate new configuration values against defined business rules.
+-   **[FR-007]** The system shall reject configuration updates that fail validation.
+-   **[FR-008]** The system shall display an informative error message (e.g., "Invalid numeric value", "Business rule violation") when configuration validation fails.
+-   **[FR-009]** The system shall update the configuration settings in the database upon successful validation and saving.
+-   **[FR-010]** The system shall distribute updated configuration settings to relevant system components.
+-   **[FR-011]** The system shall display a confirmation message (e.g., "Settings updated successfully") upon successful configuration update.
+-   **[FR-012]** The system shall ensure that the database remains unchanged when an invalid configuration update is rejected.
 
 ## 2. Non-Functional Requirements (NFR)
--   **[NFR-001]** **Data Integrity:** The system shall maintain data integrity during all database operations related to configuration updates. (From "while maintaining data integrity" in Scenario Outline)
--   **[NFR-002]** **Consistency:** The system shall ensure consistency of configuration settings across all relevant distributed components. (Implicit from "distribute the new config to relevant components" in Scenario Outline)
--   **[NFR-003]** **Usability/User Feedback:** The system shall provide clear, immediate, and specific user feedback for both successful operations and validation failures. (Implicit from "display a 'Settings updated successfully' message" and "display an 'Invalid numeric value' or 'Business rule violation' error")
--   **[NFR-004]** **Reliability/Atomicity:** The system shall ensure that configuration updates are atomic, meaning either all changes are successfully applied and persistent, or no changes are applied, preserving the previous state. (Implicit from "update the database" on success and "database should remain unchanged" on error)
--   **[NFR-005]** **Security:** The system shall enforce appropriate authorization to ensure that only designated administrative users can perform configuration management tasks. (Implicit from "authorized for the Configuration Menu" in Background)
+
+-   **[NFR-001]** **Data Integrity:** The system shall maintain data integrity for configuration settings across all update operations, ensuring valid changes are persisted correctly and invalid changes are not persisted.
