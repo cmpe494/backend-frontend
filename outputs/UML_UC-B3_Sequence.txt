@@ -1,0 +1,105 @@
+```plantuml
+@startuml
+' Global participants for all scenarios
+actor Admin as "Admin User"
+actor Manager as "Manager User" ' Used in Unauthorized Operation scenario
+participant "Admin UI" as UI
+
+box "Backend System"
+  participant "Authorization Service" as AuthService
+  participant "User Service" as UserService
+  participant "Password Service" as PasswordService
+  database "User Database" as DB
+end box
+
+header User Account Management (UC-B3)
+
+' === Scenario: Successfully create a new staff account ===
+== Scenario: Successfully create a new staff account ==
+note over Admin, DB: Admin creates a new staff account with valid details.
+
+Admin -> UI: Enters valid details for a new "Cashier"
+activate UI
+UI -> UI: Validate input format
+UI -> UserService: Request to create account (details, desired role: "Cashier")
+activate UserService
+
+UserService -> AuthService: Verify Admin's authorization to create user
+activate AuthService
+AuthService --> UserService: Authorization granted (Admin is authorized to create 'Cashier')
+deactivate AuthService
+
+UserService -> DB: Create new account record (user details, initial status)
+activate DB
+DB --> UserService: Account record created successfully (returns User ID)
+deactivate DB
+
+UserService -> UserService: Generate temporary password for new user
+note right of UserService: e.g., using a secure random generator
+UserService --> UI: Account created confirmation (User ID, temporary password)
+deactivate UserService
+UI --> Admin: Display "User created successfully" confirmation
+deactivate UI
+
+' === Scenario: Unauthorized account creation attempt ===
+newpage
+== Scenario: Unauthorized account creation attempt ==
+note over Manager, DB: A manager attempts to create an Admin account, which is denied due to insufficient privileges.
+
+Manager -> UI: Attempts to create account with role "Admin"
+activate UI
+UI -> UI: Validate input format
+UI -> UserService: Request to create account (user details, desired role: "Admin")
+activate UserService
+
+UserService -> AuthService: Verify Manager's authorization to create 'Admin' role
+activate AuthService
+AuthService --> UserService: Authorization denied (Manager cannot create 'Admin' role)
+deactivate AuthService
+
+UserService --> UI: Error: Insufficient privileges
+deactivate UserService
+UI --> Manager: Display "Insufficient privileges" error message
+deactivate UI
+
+' === Scenario: Resetting a user's password ===
+newpage
+== Scenario: Resetting a user's password ==
+note over Admin, DB: Admin resets an existing user's password.
+
+Admin -> UI: Selects an existing user account, clicks "Reset Password"
+activate UI
+UI -> UserService: Request to reset password for target_user_ID
+activate UserService
+
+UserService -> AuthService: Verify Admin's authorization to reset password
+activate AuthService
+AuthService --> UserService: Authorization granted (Admin is authorized to reset passwords)
+deactivate AuthService
+
+UserService -> PasswordService: Invalidate old password for target_user_ID
+activate PasswordService
+PasswordService -> DB: Mark old password as invalid/expired for target_user_ID
+activate DB
+DB --> PasswordService: Old password invalidated
+deactivate DB
+PasswordService --> UserService: Old password invalidated confirmation
+deactivate PasswordService
+
+UserService -> PasswordService: Generate new temporary password for target_user_ID
+activate PasswordService
+PasswordService --> UserService: New temporary password generated
+deactivate PasswordService
+
+UserService -> DB: Store new temporary password for target_user_ID
+activate DB
+DB --> UserService: New temporary password stored successfully
+deactivate DB
+
+UserService --> UI: Password reset confirmation (including new temporary password)
+deactivate UserService
+UI --> Admin: Display "Password reset successfully" confirmation
+deactivate UI
+
+@enduml
+```

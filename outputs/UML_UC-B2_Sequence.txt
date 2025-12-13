@@ -1,0 +1,57 @@
+```plantuml
+@startuml
+title System Configuration Update Flow (UC-B2)
+
+actor Admin as "Admin (User)"
+participant "Configuration UI" as UI
+participant "Config Management Service" as CMS
+participant "Validation Module" as VM
+database "Configuration Database" as DB
+participant "Config Distribution Service" as CDS
+participant "Operational Components" as OC
+
+Admin -> UI: 1. Updates "<setting>" to "<new_value>" and Clicks Save
+activate UI
+UI -> CMS: 2. requestUpdateConfiguration(setting, new_value)
+activate CMS
+
+alt Successful Update (Basic Flow)
+    CMS -> VM: 3. validateSettings(setting, new_value)
+    activate VM
+    VM --> CMS: 4. validationResult(valid)
+    deactivate VM
+
+    CMS -> DB: 5. updateConfiguration(setting, new_value)
+    activate DB
+    DB --> CMS: 6. updateConfirmation()
+    deactivate DB
+
+    CMS -> CDS: 7. distributeConfiguration(setting, new_value)
+    activate CDS
+    CDS -> OC: 8. applyConfiguration(setting, new_value)
+    activate OC
+    OC --> CDS: 9. configAppliedConfirmation()
+    deactivate OC
+    CDS --> CMS: 10. distributionConfirmation()
+    deactivate CDS
+
+    CMS --> UI: 11. configurationUpdatedSuccess()
+    deactivate CMS
+    UI -> Admin: 12. displayMessage("Settings updated successfully")
+else Invalid Configuration (Exception Flow I2)
+    note right of Admin: Admin attempts to set "Zone Capacity" to "-5"
+    CMS -> VM: 3. validateSettings(setting, new_value)
+    activate VM
+    VM --> CMS: 4. validationResult(invalid, "Invalid numeric value")
+    deactivate VM
+
+    CMS --> UI: 5. configurationUpdateFailed("Invalid numeric value")
+    deactivate CMS
+    UI -> Admin: 6. displayMessage("Invalid numeric value" or "Business rule violation")
+    note over DB, OC: Database state remains unchanged. Operational components are unaffected.
+end
+
+deactivate UI
+
+@enduml
+```

@@ -1,0 +1,55 @@
+```plantuml
+@startuml
+!theme mars
+
+title "UC-B1: Staff Successful Login and Token Generation"
+autonumber
+
+actor "Operational Staff" as Staff
+participant "Web UI / Frontend" as UI
+participant "Authentication Service" as AuthSvc
+database "User Management DB" as UserDB
+participant "Authorization Service" as AuthzSvc
+
+Staff -> UI: Displays Login Screen (Given the user is on the login screen)
+activate UI
+
+Staff -> UI: Enters valid username/password and clicks "Login"\n(When the user enters valid username/password and clicks "Login")
+deactivate UI
+
+UI -> AuthSvc: POST /login (username, password)
+activate AuthSvc
+
+AuthSvc -> UserDB: Query: Verify Credentials and Fetch User Details (username, password)
+activate UserDB
+
+UserDB --> AuthSvc: Return: User Details (user_id, role, account_status="Active")
+deactivate UserDB
+note right of AuthSvc
+  System verifies credentials against the database.
+  Implicitly checks account_status.
+end note
+
+AuthSvc -> AuthzSvc: Request: Authorize User for login (user_id, role)
+activate AuthzSvc
+
+AuthzSvc --> AuthSvc: Grant: Authorization for role <role>
+deactivate AuthzSvc
+note right of AuthSvc
+  System authorizes the user with role "<role>".
+end note
+
+AuthSvc -> AuthSvc: Generate Session Token (JWT)
+note right: JWT contains user_id, role, expiry
+note right: System generates a valid "Session Token" (JWT).
+deactivate AuthSvc
+
+AuthSvc --> UI: Response: JWT, Redirect URL (e.g., /cashier-panel or /admin-dashboard)
+
+UI -> Staff: Redirects to <dashboard_type> (e.g., Cashier Panel)
+activate UI
+note right: JWT stored in session/cookie for subsequent requests.
+deactivate UI
+
+@enduml
+```

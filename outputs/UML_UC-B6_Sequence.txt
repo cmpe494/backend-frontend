@@ -1,0 +1,45 @@
+```plantuml
+@startuml
+title Backend User Session Initiation (UC-B6)
+
+actor KioskClient
+participant "Backend System" as Backend
+participant WalletService
+participant LedgerService
+
+KioskClient -> Backend: Start Session Request (Card ID, Game ID)
+note right of Backend: Request contains valid Card ID & Game ID
+
+activate Backend
+
+' Exception Flow I2: Real-time response requirement
+hnote over Backend: Response must be sent within 1 second
+
+Backend -> WalletService: GetBalance(Card ID)
+activate WalletService
+WalletService --> Backend: Current Balance (B)
+deactivate WalletService
+
+alt B >= Game Cost "Basic Flow: Successful Session Authorization"
+    ' Backend confirms balance is greater than the "Game Cost"
+    Backend -> WalletService: DeductCost(Card ID, Game Cost)
+    activate WalletService
+    WalletService --> Backend: Deduction Acknowledged
+    deactivate WalletService
+    Backend -> LedgerService: CreateLogEntry(Card ID, Game ID, Game Cost, Type: Deduction)
+    activate LedgerService
+    LedgerService --> Backend: Log Entry Created
+    deactivate LedgerService
+    Backend --> KioskClient: Session Authorized Response
+else B < Game Cost "Alternative Flow A1: Insufficient Balance"
+    Backend --> KioskClient: Insufficient Funds Error
+    note right of Backend: Wallet balance remains unchanged
+end
+
+deactivate Backend
+
+' Exception Flow I2: Timeout logging
+note over KioskClient, Backend: If processing exceeds 1 second, a timeout error should be logged by Backend.
+
+@enduml
+```

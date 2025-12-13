@@ -1,0 +1,106 @@
+```plantuml
+@startuml
+' Actors
+actor Operator as "Operator (Cashier, Manager)"
+
+' System Components
+participant "POS/UI System" as UI
+control "Transaction Service" as TxService
+control "Authorization Service" as AuthSvc
+control "Customer Account Service" as CustAccSvc
+database "Financial DB" as DB
+control "Logging Service" as LogSvc
+control "Alerting Service" as AlertSvc
+
+title Financial Operations - Transaction Processing (UC-B4)
+
+Operator -> UI: Enter Customer ID/Transaction ID\n& Amount (e.g., Load 500, Refund 50.00)
+activate UI
+UI -> Operator: Display transaction details for confirmation
+
+Operator -> UI: Confirm Action
+UI -> TxService: ProcessTransaction(customerID, amount, type)
+activate TxService
+
+TxService -> AuthSvc: VerifyOperatorAuthority(operatorID, transactionType, amount)
+activate AuthSvc
+AuthSvc --> TxService: OperatorAuthorized(isAuthorized: boolean)
+deactivate AuthSvc
+
+alt Operator is Authorized
+    TxService -> TxService: Start Database Transaction (atomic scope)
+
+    alt Basic Flow: Processing financial transactions & Exception Flow I2: Negative Balance Check
+        TxService -> CustAccSvc: PerformBalanceUpdate(customerID, amount, type)
+        activate CustAccSvc
+        CustAccSvc -> DB: Query Customer Balance (e.g., for refund check)
+        activate DB
+        DB --> CustAccSvc: Current Balance (e.g., 10.00)
+        deactivate DB
+
+        alt Sufficient Funds for Refund / Load Points Valid
+            CustAccSvc -> DB: Update Customer Balance
+            activate DB
+            DB --> CustAccSvc: Balance Updated
+            deactivate DB
+            CustAccSvc --> TxService: BalanceUpdateSuccessful
+            deactivate CustAccSvc
+
+            TxService -> LogSvc: LogFinancialAction(transactionDetails)
+            activate LogSvc
+            LogSvc -> DB: Insert into "Financial Journal"
+            activate DB
+            DB --> LogSvc: Log Entry Saved
+            deactivate DB
+            LogSvc --> TxService: ActionLogged
+            deactivate LogSvc
+
+            TxService -> TxService: Commit Database Transaction
+            TxService --> UI: TransactionComplete
+            deactivate TxService
+            UI --> Operator: Display "Transaction Complete"
+            deactivate UI
+
+        else Exception Flow I2: Refund results in negative balance
+            CustAccSvc --> CustAccSvc: Check for negative balance (e.g., Refund 20.00 from 10.00)
+            CustAccSvc --> TxService: Error: InsufficientFunds
+            deactivate CustAccSvc
+
+            TxService -> TxService: Rollback Database Transaction
+            TxService --> UI: Error: Insufficient funds for refund
+            deactivate TxService
+            UI --> Operator: Display "Insufficient funds for refund" error
+            deactivate UI
+        end
+
+    else Exception Flow I3: Database error triggers rollback
+        ' Error occurs during CustAccSvc interaction with DB
+        TxService -> CustAccSvc: PerformBalanceUpdate(customerID, amount, type)
+        activate CustAccSvc
+        CustAccSvc -[#red]> DB: Attempt to Update Customer Balance
+        activate DB
+        DB -[#red]> CustAccSvc: **Database Connection Error / Write Failed**
+        deactivate DB
+        CustAccSvc -[#red]> TxService: **Error: Database operation failed**
+        deactivate CustAccSvc
+
+        TxService -> TxService: **Perform "Rollback" Database Transaction**
+        TxService -> AlertSvc: AlertTechnicalTeam("Database Error", "Transaction Failed: X, details...")
+        activate AlertSvc
+        AlertSvc --> TxService: AlertAcknowledged
+        deactivate AlertSvc
+
+        TxService --> UI: Error: Technical System Error. Please try again.
+        deactivate TxService
+        UI --> Operator: Display "System error occurred. Balance not affected."
+        deactivate UI
+    end
+
+else Operator Not Authorized
+    TxService --> UI: Error: Operator Not Authorized
+    deactivate TxService
+    UI --> Operator: Display "Operator Not Authorized" error
+    deactivate UI
+end
+@enduml
+```

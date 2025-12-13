@@ -18,12 +18,12 @@ async function loadFeatureList() {
   const info = document.getElementById("selectedInfo");
 
   // UI reset
-  featureSelect.innerHTML = `<option value="">Yükleniyor...</option>`;
-  scenarioSelect.innerHTML = `<option value="">Önce feature seç</option>`;
+  featureSelect.innerHTML = `<option value="">Loading...</option>`;
+  scenarioSelect.innerHTML = `<option value="">First select the feature.</option>`;
   scenarioSelect.disabled = true;
   loadScenarioBtn.disabled = true;
   loadFeatureBtn.disabled = true;
-  info.textContent = "Seçim yapılmadı.";
+  info.textContent = "No election was held.";
 
   try {
     const res = await fetch(`${API_BASE_URL}/features`);
@@ -34,12 +34,12 @@ async function loadFeatureList() {
 
     featureCache = data.features || [];
     if (featureCache.length === 0) {
-      featureSelect.innerHTML = `<option value="">Feature bulunamadı</option>`;
+      featureSelect.innerHTML = `<option value="">Feature not found.</option>`;
       return;
     }
 
     // dropdown doldur
-    featureSelect.innerHTML = `<option value="">Feature seç...</option>`;
+    featureSelect.innerHTML = `<option value="">Select Feature...</option>`;
     for (const f of featureCache) {
       const opt = document.createElement("option");
       opt.value = f.path;
@@ -47,8 +47,8 @@ async function loadFeatureList() {
       featureSelect.appendChild(opt);
     }
   } catch (err) {
-    featureSelect.innerHTML = `<option value="">❌ Features yüklenemedi</option>`;
-    showToast(`Feature listesi alınamadı: ${err.message}`);
+    featureSelect.innerHTML = `<option value="">❌ Features could not be loaded.</option>`;
+    showToast(`Feature list could not be retrieved: ${err.message}`);
   }
 }
 
@@ -61,11 +61,11 @@ async function onFeatureChange() {
 
   const path = featureSelect.value;
 
-  scenarioSelect.innerHTML = `<option value="">Önce feature seç</option>`;
+  scenarioSelect.innerHTML = `<option value="">First select the feature.</option>`;
   scenarioSelect.disabled = true;
   loadScenarioBtn.disabled = true;
   loadFeatureBtn.disabled = true;
-  info.textContent = "Seçim yapılmadı.";
+  info.textContent = "No election was held.";
 
   if (!path) {
     currentFeatureText = "";
@@ -85,7 +85,7 @@ async function onFeatureChange() {
     scenarioCache = parseScenariosFromFeature(currentFeatureText);
 
     // scenario dropdown doldur
-    scenarioSelect.innerHTML = `<option value="">Scenario seç...</option>`;
+    scenarioSelect.innerHTML = `<option value="">Choose a scenario...</option>`;
     for (let i = 0; i < scenarioCache.length; i++) {
       const s = scenarioCache[i];
       const opt = document.createElement("option");
@@ -97,12 +97,12 @@ async function onFeatureChange() {
     scenarioSelect.disabled = scenarioCache.length === 0;
     loadFeatureBtn.disabled = false;
 
-    info.textContent = `Feature seçildi: ${path} — ${scenarioCache.length} scenario bulundu.`;
-    showToast("Feature yüklendi!");
+    info.textContent = `Feature selected: ${path} — ${scenarioCache.length} scenario bulundu.`;
+    showToast("Feature loaded!");
   } catch (err) {
     currentFeatureText = "";
     scenarioCache = [];
-    showToast(`Feature okunamadı: ${err.message}`);
+    showToast(`Feature could not be read: ${err.message}`);
   } finally {
     showLoading(false);
   }
@@ -116,46 +116,46 @@ function onScenarioChange() {
   const idx = scenarioSelect.value;
   if (idx === "" || idx == null) {
     loadScenarioBtn.disabled = true;
-    info.textContent = "Scenario seçilmedi.";
+    info.textContent = "Scenario was not selected.";
     return;
   }
 
   const s = scenarioCache[Number(idx)];
   if (!s) {
     loadScenarioBtn.disabled = true;
-    info.textContent = "Scenario bulunamadı.";
+    info.textContent = "Scenario not found.";
     return;
   }
 
   loadScenarioBtn.disabled = false;
-  info.textContent = `Scenario seçildi: ${s.title}`;
+  info.textContent = `Scenario selected: ${s.title}`;
 }
 
 function loadSelectedScenarioToEditor() {
   const scenarioSelect = document.getElementById("scenarioSelect");
   const idx = scenarioSelect.value;
   if (idx === "" || idx == null) {
-    showToast("Önce scenario seç!");
+    showToast("Choose your scenario first!");
     return;
   }
   const s = scenarioCache[Number(idx)];
   if (!s) {
-    showToast("Scenario bulunamadı!");
+    showToast("Scenario not found!");
     return;
   }
 
   // BDD input'a sadece o scenario bloğunu bas
   document.getElementById("bddInput").value = s.blockText;
-  showToast("Scenario editöre aktarıldı!");
+  showToast("The scenario has been sent to the editor!");
 }
 
 function loadWholeFeatureToEditor() {
   if (!currentFeatureText.trim()) {
-    showToast("Önce feature seç!");
+    showToast("Select the feature first!");
     return;
   }
   document.getElementById("bddInput").value = currentFeatureText;
-  showToast("Tüm feature editöre aktarıldı!");
+  showToast("All features have been transferred to the editor!");
 }
 
 // Feature text içinden Scenario bloklarını ayıklar
@@ -216,7 +216,7 @@ async function generateRequirements() {
   const input = document.getElementById("bddInput").value.trim();
 
   if (!input) {
-    showToast("Lütfen BDD senaryosu girin!");
+    showToast("Please enter a BDD scenario!");
     return;
   }
 
@@ -235,13 +235,13 @@ async function generateRequirements() {
     if (data.success) {
       displayOutput(data.result);
       switchTab("requirements");
-      showToast("Requirement başarıyla oluşturuldu!");
+      showToast("Requirement successfully created!");
     } else {
       throw new Error(data.error || "Unknown error");
     }
   } catch (error) {
-    displayOutput(`❌ Hata: ${error.message}\n\nPython server çalıştırın: python server.py`);
-    showToast("Bir hata oluştu!");
+    displayOutput(`❌ Eror: ${error.message}\n\nRun the Python server: python server.py`);
+    showToast("An error occurred!");
   } finally {
     showLoading(false);
   }
@@ -251,7 +251,7 @@ async function generateTestCases() {
   const input = document.getElementById("bddInput").value.trim();
 
   if (!input) {
-    showToast("Lütfen BDD senaryosu girin!");
+    showToast("Please enter a BDD scenario!");
     return;
   }
 
@@ -270,13 +270,13 @@ async function generateTestCases() {
     if (data.success) {
       document.getElementById("testcases-output").innerHTML = `<pre>${escapeHtml(data.result)}</pre>`;
       switchTab("testcases");
-      showToast("Test case'ler oluşturuldu!");
+      showToast("Test cases have been created!");
     } else {
       throw new Error(data.error || "Unknown error");
     }
   } catch (error) {
-    document.getElementById("testcases-output").innerHTML = `<pre>❌ Hata: ${escapeHtml(error.message)}</pre>`;
-    showToast("Bir hata oluştu!");
+    document.getElementById("testcases-output").innerHTML = `<pre>❌ Eror: ${escapeHtml(error.message)}</pre>`;
+    showToast("An error occurred!");
   } finally {
     showLoading(false);
   }
@@ -293,7 +293,7 @@ async function generateUMLDiagram(diagramType) {
   };
 
   if (!input) {
-    showToast("Lütfen BDD senaryosu girin!");
+    showToast("Please enter a BDD scenario!");
     return;
   }
 
@@ -318,13 +318,13 @@ async function generateUMLDiagram(diagramType) {
       outputDiv.innerHTML = `<pre>${escapeHtml(plantumlCode)}</pre>`;
 
       switchTab("uml");
-      showToast(`${diagramNames[diagramType]} oluşturuldu!`);
+      showToast(`${diagramNames[diagramType]} Created!`);
     } else {
       throw new Error(data.error || "Unknown error");
     }
   } catch (error) {
     document.getElementById("uml-output").innerHTML = `<pre>❌ Hata: ${escapeHtml(error.message)}</pre>`;
-    showToast("Bir hata oluştu!");
+    showToast("An error occurred!");
   } finally {
     showLoading(false);
   }
@@ -350,28 +350,28 @@ function showToast(message) {
 
 function clearInput() {
   document.getElementById("bddInput").value = "";
-  showToast("Giriş temizlendi");
+  showToast("The entrance has been cleared.");
 }
 
 function copyOutput(tabName) {
   const outputText = document.getElementById(`${tabName}-output`).innerText;
 
-  if (!outputText || outputText.includes("görünecek")) {
-    showToast("Henüz kopyalanacak içerik yok!");
+  if (!outputText || outputText.includes("will appear")) {
+    showToast("There's no content to copy yet!");
     return;
   }
 
   navigator.clipboard
     .writeText(outputText)
-    .then(() => showToast("Panoya kopyalandı!"))
-    .catch(() => showToast("Kopyalama başarısız!"));
+    .then(() => showToast("Copied to clipboard!"))
+    .catch(() => showToast("Copying failed!"));
 }
 
 function downloadOutput(tabName) {
   const outputText = document.getElementById(`${tabName}-output`).innerText;
 
-  if (!outputText || outputText.includes("görünecek")) {
-    showToast("Henüz indirilecek içerik yok!");
+  if (!outputText || outputText.includes("will appear")) {
+    showToast("There's no content to download yet!");
     return;
   }
 
@@ -384,14 +384,14 @@ function downloadOutput(tabName) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast("Dosya indirildi!");
+  showToast("File downloaded!");
 }
 
 async function downloadDiagram() {
   // Şimdilik PlantUML kodunu indir (PNG değil)
   const text = document.getElementById("uml-output").innerText.trim();
   if (!text) {
-    showToast("Henüz indirilecek diagram yok!");
+    showToast("There are no diagrams available to download yet!");
     return;
   }
 
@@ -404,7 +404,7 @@ async function downloadDiagram() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast("PlantUML kodu indirildi!");
+  showToast("PlantUML code has been downloaded!");
 }
 
 function switchTab(tabName) {
@@ -416,7 +416,7 @@ function switchTab(tabName) {
 
 function showUMLDialog() {
   if (!document.getElementById("bddInput").value.trim()) {
-    showToast("Lütfen BDD senaryosu girin!");
+    showToast("Please enter a BDD scenario!");
     return;
   }
   document.getElementById("umlDialog").classList.remove("hidden");
@@ -438,4 +438,4 @@ function escapeHtml(str) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-}
+}  

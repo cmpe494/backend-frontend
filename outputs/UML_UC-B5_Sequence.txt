@@ -1,0 +1,61 @@
+```plantuml
+@startuml
+title UC-B5: Generating a Performance Report
+
+actor "Manager/Admin" as User
+participant "Reporting UI" as UI
+participant "Reporting Service" as ReportingSvc
+participant "Cache Service" as CacheSvc
+participant "Data Service" as DataSvc
+database "Report Database" as DB
+
+note over User, DB
+  <b>Background:</b>
+  User is logged in and on the "Reports" panel
+end note
+
+User -> UI: selects "Daily Revenue Report" for current date
+User -> UI: clicks "Generate Report"
+
+activate UI
+UI -> ReportingSvc: Request Report (type, date)
+activate ReportingSvc
+
+ReportingSvc -> CacheSvc: Check for valid cached data (reportKey)
+activate CacheSvc
+
+alt Cache Hit (valid data found)
+    CacheSvc --> ReportingSvc: Cached Report Data
+else Cache Miss (data not found or invalid)
+    CacheSvc --> ReportingSvc: Cache Miss
+    deactivate CacheSvc
+
+    ReportingSvc -> DataSvc: Retrieve Raw Data (reportType, date)
+    activate DataSvc
+    DataSvc -> DB: Query Report Data (for type, date)
+    activate DB
+    DB --> DataSvc: Raw Report Data
+    deactivate DB
+    DataSvc --> ReportingSvc: Processed Report Data
+    deactivate DataSvc
+
+    ReportingSvc -> CacheSvc: Store Report Data (reportKey, processedData)
+    activate CacheSvc
+    CacheSvc --> ReportingSvc: Acknowledge Store
+    deactivate CacheSvc
+end
+
+ReportingSvc --> UI: Display Report Data
+deactivate ReportingSvc
+
+UI -> User: Rendered Performance Report
+
+note over UI, User
+  <b>Goal:</b>
+  Report displayed within "5 seconds"
+end note
+
+deactivate UI
+
+@enduml
+```
