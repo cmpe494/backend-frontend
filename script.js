@@ -97,7 +97,7 @@ async function onFeatureChange() {
     scenarioSelect.disabled = scenarioCache.length === 0;
     loadFeatureBtn.disabled = false;
 
-    info.textContent = `Feature selected: ${path} — ${scenarioCache.length} scenario bulundu.`;
+    info.textContent = `Feature selected: ${path} — ${scenarioCache.length} the scenario was found.`;
     showToast("Feature loaded!");
   } catch (err) {
     currentFeatureText = "";

@@ -36,7 +36,7 @@ def static_files(path: str):
 @app.get("/api/features")
 def list_features():
     if not os.path.isdir(FEATURES_DIR):
-        return jsonify({"success": False, "error": "features klasörü bulunamadı"}), 500
+        return jsonify({"success": False, "error": "the features folder was not found"}), 500
 
     features = []
 
@@ -64,12 +64,12 @@ def list_features():
 def read_feature():
     path = request.args.get("path")
     if not path:
-        return jsonify({"success": False, "error": "path parametresi gerekli"}), 400
+        return jsonify({"success": False, "error": "the path parameter is required"}), 400
 
     full_path = os.path.join(BASE_DIR, path)
 
     if not os.path.isfile(full_path):
-        return jsonify({"success": False, "error": "Feature dosyası bulunamadı"}), 404
+        return jsonify({"success": False, "error": "The feature file was not found"}), 404
 
     try:
         with open(full_path, "r", encoding="utf-8") as f:
@@ -91,7 +91,7 @@ def generate():
     diagram_type = data.get("diagram_type", "Use Case Diagram")
 
     if not bdd_text:
-        return jsonify({"success": False, "error": "text boş olamaz"}), 400
+        return jsonify({"success": False, "error": "the text cannot be empty"}), 400
 
     try:
         if action_type == "requirement":
@@ -101,7 +101,7 @@ def generate():
         elif action_type == "uml":
             result = generate_uml_plantuml(bdd_text, diagram_type)
         else:
-            return jsonify({"success": False, "error": f"Geçersiz type: {action_type}"}), 400
+            return jsonify({"success": False, "error": f"Invalid type: {action_type}"}), 400
 
         return jsonify({"success": True, "result": str(result)})
 
