@@ -1,0 +1,48 @@
+```plantuml
+@startuml
+title Remote Control Operations (UC-SC4)
+
+actor "System Administrator" as Admin
+participant "Admin Dashboard UI" as UI
+participant "Command Management Service" as CMS
+participant "Device Communication Gateway" as DCG
+participant "Target Device" as Device
+
+Admin -> UI: 1. Admin selects device "Kiosk-01"
+activate UI
+Admin -> UI: 2. Admin sends "REBOOT" command
+
+UI -> CMS: 3. Request Remote Command (Kiosk-01, REBOOT)
+deactivate UI
+activate CMS
+
+CMS -> DCG: 4. Transmit Command Securely (Kiosk-01, REBOOT)
+activate DCG
+
+alt Basic Flow: Device executes successfully (Example: Kiosk-01 REBOOT)
+    DCG -> Device: 5. Encrypted Command (REBOOT)
+    activate Device
+    Device -> Device: 6. Execute REBOOT command
+    Device --> DCG: 7. Command Result ("Reboot Initiated")
+    deactivate Device
+else Error Flow: Device fails to execute command (Scenario: Kiosk-Legacy UPDATE_SOFTWARE)
+    note over Admin, Device: This path illustrates the "Device fails to execute command" scenario where Admin sends "UPDATE_SOFTWARE" to "Kiosk-Legacy".
+    DCG -> Device: 5a. Encrypted Command (UPDATE_SOFTWARE)
+    activate Device
+    Device -> Device: 6a. Encounters internal error during UPDATE_SOFTWARE
+    Device --> DCG: 7a. Error Response ("Command Execution Failed: Error Code 500")
+    deactivate Device
+end
+
+DCG --> CMS: 8. Secure Response (result/error)
+deactivate DCG
+
+CMS --> UI: 9. Command Execution Status (result/error detail)
+deactivate CMS
+activate UI
+
+UI --> Admin: 10. Display Status to Admin (result/error detail)
+deactivate UI
+
+@enduml
+```

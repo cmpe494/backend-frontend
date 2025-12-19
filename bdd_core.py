@@ -1,37 +1,55 @@
 from __future__ import annotations
-
 import os
+import time #sıra bekletir
+import random
 from google import genai
-
+from google.genai import errors #overload hatasını yakalamak
 MODEL = "gemini-2.5-flash"
 
 
 def get_llm_client() -> genai.Client:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY yok. PowerShell: $env:GEMINI_API_KEY='YOUR_KEY'")
+        raise ValueError("GEMINI_API_KEY does not exist. PowerShell: $env:GEMINI_API_KEY='YOUR_KEY'")
     return genai.Client(api_key=api_key)
 
 
 def _call_llm(prompt: str) -> str:
     """
     - LLM çağrısını tek yerde yönetir
+    - 503 (overloaded) durumunda otomatik retry yapar
     - .text boş/None gelirse asla None döndürmez
     - her zaman temiz (strip) string döndürür
     """
     client = get_llm_client()
-    resp = client.models.generate_content(model=MODEL, contents=prompt)
 
-    text = getattr(resp, "text", None)
-    if text is None:
-        return "❌ LLM returned None (resp.text is None)."
+    max_attempts = 5
+    base_delay = 1.0  # seconds
 
-    text = str(text).strip()
-    if not text:
-        return "❌ LLM returned empty response (resp.text is empty)."
+    for attempt in range(1, max_attempts + 1): #deneme mantığı
+        try:
+            resp = client.models.generate_content(model=MODEL, contents=prompt)
 
-    return text
+            text = getattr(resp, "text", None)
+            if text is None:
+                return "❌ LLM returned None (resp.text is None)."
 
+            text = str(text).strip()
+            if not text:
+                return "❌ LLM returned empty response (resp.text is empty)."
+
+            return text
+
+        except errors.ServerError as e:
+            msg = str(e)
+            # 503 overloaded → retry(tekrar dene)
+            if "503" in msg or "overloaded" in msg.lower():
+                if attempt == max_attempts:
+                    return "❌ Gemini API is overloaded (503). Please try again later."
+                sleep_s = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                time.sleep(sleep_s)
+                continue
+            raise
 
 def generate_requirements(bdd_text: str) -> str:
     prompt = f"""You are a Senior Technical Analyst. Your task is to convert the provided BDD Feature/Scenario text into a formal Systems Requirements Document.

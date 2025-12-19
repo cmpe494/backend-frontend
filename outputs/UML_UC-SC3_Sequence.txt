@@ -1,0 +1,44 @@
+```plantuml
+@startuml
+!pragma layout smetana
+
+actor Admin as "System Administrator"
+participant MonitoringDashboard as "Monitoring Dashboard"
+participant SystemBackend as "System Backend"
+collections "Connected Device Agents" as DeviceAgents
+
+Admin -> MonitoringDashboard: Access Monitoring Dashboard
+activate MonitoringDashboard
+
+MonitoringDashboard -> SystemBackend: Request current device statuses
+activate SystemBackend
+
+loop For each connected Device Agent
+    SystemBackend -> DeviceAgents: Poll status data (GET /status)
+    activate DeviceAgents
+    DeviceAgents --> SystemBackend: Respond with status data (JSON: Device ID, Connection Status, Current Game, Health)
+    deactivate DeviceAgents
+end
+
+SystemBackend -> SystemBackend: Process and aggregate all received status data
+note right
+  - Validate data structure
+  - Consolidate into a single report
+end note
+
+SystemBackend --> MonitoringDashboard: Send aggregated status report
+deactivate SystemBackend
+
+MonitoringDashboard -> MonitoringDashboard: Update display with device status table
+note right
+  Dashboard displays:
+  | Device ID | Connection Status | Current Game | Health |
+  | Kiosk-01  | Online            | Idle         | Good   |
+  | Game-05   | Online            | Racing       | Good   |
+end note
+
+MonitoringDashboard --> Admin: Display updated monitoring dashboard
+deactivate MonitoringDashboard
+
+@enduml
+```

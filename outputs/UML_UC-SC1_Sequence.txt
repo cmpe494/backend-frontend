@@ -1,0 +1,118 @@
+```plantuml
+@startuml
+!pragma layout smetana
+
+title System Mode Switching (UC-SC1) - Component Interaction Flow
+
+actor "System Administrator" as Admin
+participant "System Settings UI" as UI
+participant "System Manager Backend" as Backend
+participant "Configuration Service" as Config
+participant "Service Orchestrator" as Orchestrator
+participant "Hardware Manager" as HAL
+participant "Notification Service" as Notifier
+participant "Logging Service" as Logger
+
+Admin -> UI: Logs in and navigates to System Settings (Background)
+
+box "Mode Switching Process" #LightBlue
+    Admin -> UI: Selects "<target_mode>" from mode options\nand confirms change
+    activate UI
+    UI -> Backend: RequestModeChange(currentMode, targetMode)
+    deactivate UI
+
+    activate Backend
+    Backend -> Logger: LogEvent("Mode change initiated", currentMode, targetMode)
+    activate Logger
+    deactivate Logger
+
+    Backend -> Config: GetModeConfiguration(targetMode)
+    activate Config
+    Config --> Backend: targetModeConfigDetails
+    deactivate Config
+
+    Backend -> Orchestrator: PrepareAndApplyConfiguration(targetModeConfigDetails)
+    activate Orchestrator
+
+    alt Successful Configuration
+        Orchestrator -> Orchestrator: (Internal) Stop running services
+        group Reconfigure Services
+            loop for each service in targetModeConfigDetails
+                Orchestrator -> Orchestrator: ReconfigureService(service, targetModeConfig)
+            end
+        end
+
+        Orchestrator -> HAL: ApplyHardwareConfiguration(targetModeConfigDetails.hardware)
+        activate HAL
+        HAL --> Orchestrator: HardwareConfigApplied
+        deactivate HAL
+
+        group Start Services
+            loop for each service in targetModeConfigDetails
+                Orchestrator -> Orchestrator: StartService(service)
+            end
+        end
+
+        Orchestrator --> Backend: ModeConfigurationApplied(targetMode)
+        deactivate Orchestrator
+
+        Backend -> Backend: PersistNewSystemMode(targetMode)
+        Backend -> Notifier: SendNotification("Mode switch successful")
+        activate Notifier
+        Notifier --> UI: DisplayNotification("Mode switch successful")
+        deactivate Notifier
+
+        UI --> Admin: Displays "Mode switch successful" and confirms system is running in "<target_mode>"
+        Backend -> Logger: LogEvent("Mode switch successful", targetMode)
+        activate Logger
+        deactivate Logger
+
+    else Configuration Failure (Rollback)
+        Orchestrator --x Backend: ConfigurationFailure(errorDetails, currentMode)
+        deactivate Orchestrator
+
+        note right of Backend: A configuration error or resource conflict occurred.\nInitiating automatic rollback.
+        Backend -> Logger: LogEvent("Configuration failed, initiating rollback", errorDetails)
+        activate Logger
+        deactivate Logger
+
+        Backend -> Orchestrator: RollbackToPreviousConfiguration(currentModeConfigDetails)
+        activate Orchestrator
+
+        Orchestrator -> Orchestrator: (Internal) Stop newly configured/faulty services
+        group Revert Services
+            loop for each service in currentModeConfigDetails
+                Orchestrator -> Orchestrator: RevertServiceConfiguration(service, currentModeConfig)
+            end
+        end
+
+        Orchestrator -> HAL: RevertHardwareConfiguration(currentModeConfigDetails.hardware)
+        activate HAL
+        HAL --> Orchestrator: HardwareConfigReverted
+        deactivate HAL
+
+        group Restart Services
+            loop for each service in currentModeConfigDetails
+                Orchestrator -> Orchestrator: StartService(service)
+            end
+        end
+
+        Orchestrator --> Backend: RollbackSuccessful(currentMode)
+        deactivate Orchestrator
+
+        Backend -> Notifier: SendNotification("Switch failed, reverted to previous state")
+        activate Notifier
+        Notifier --> UI: DisplayNotification("Switch failed, reverted to previous state")
+        deactivate Notifier
+
+        UI --> Admin: Displays "Switch failed, reverted to previous state" and confirms system is running in "<current_mode>"
+        Backend -> Logger: LogEvent("Rollback successful, system in previous mode", currentMode)
+        activate Logger
+        deactivate Logger
+    end
+
+    deactivate Backend
+end box
+
+@enduml
+```

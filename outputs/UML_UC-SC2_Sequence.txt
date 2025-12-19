@@ -1,0 +1,88 @@
+```plantuml
+@startuml
+
+!pragma layout smetana
+
+' --- Scenario 1: Device sends logs to Central Server ---
+header Centralized Log Management (UC-SC2)\nScenario: Device sends logs to Central Server
+
+participant "Kiosk-01 (Device)" as Kiosk
+participant "Central Log Server" as CLS_S1
+database "Log Database" as DB_S1
+
+Kiosk -> Kiosk: "User Login" event occurs
+activate Kiosk
+Kiosk -> Kiosk: Generate log entry with timestamp
+Kiosk -> CLS_S1: Transmit log entry
+activate CLS_S1
+CLS_S1 -> DB_S1: Store log entry
+activate DB_S1
+deactivate DB_S1
+CLS_S1 --> Kiosk: Acknowledge log receipt (optional)
+deactivate CLS_S1
+deactivate Kiosk
+
+' --- Scenario 2: Retry mechanism for failed log transmission ---
+destroy Kiosk
+destroy CLS_S1
+destroy DB_S1
+separator
+
+header Centralized Log Management (UC-SC2)\nScenario: Retry mechanism for failed log transmission
+
+participant "Device System" as Device
+participant "Central Log Server" as CLS_S2
+entity "Local Buffer" as LocalBuffer
+
+Device -> CLS_S2: Attempt to send log
+activate Device
+alt Connection to CLS is up
+    CLS_S2 --> Device: Log received Acknowledgment
+else Connection to CLS is down
+    CLS_S2 -[#red]> Device: Connection Error
+    Device -> LocalBuffer: Store log in Local Buffer
+    Device -> Device: Generate "Transmission Delayed" warning locally
+    loop Periodically retry sending
+        Device -> CLS_S2: Re-attempt to send log
+        activate CLS_S2
+        alt Re-connection successful
+            CLS_S2 --> Device: Log received Acknowledgment
+            deactivate CLS_S2
+            break
+        else Re-connection still down
+            CLS_S2 -[#red]> Device: Connection Error
+            deactivate CLS_S2
+            Device -> Device: Wait for next retry interval
+        end
+    end
+end
+deactivate Device
+
+' --- Scenario 3: Admin requests logs from a specific device ---
+destroy Device
+destroy CLS_S2
+destroy LocalBuffer
+separator
+
+header Centralized Log Management (UC-SC2)\nScenario: Admin requests logs from a specific device
+
+actor Admin
+participant "Admin Dashboard" as Dashboard
+participant "Central Log Server" as CLS_S3
+database "Log Database" as DB_S3
+
+Admin -> Dashboard: Needs to analyze a specific issue
+activate Dashboard
+Dashboard -> CLS_S3: Request logs for "GameClient-05"
+activate CLS_S3
+CLS_S3 -> DB_S3: Retrieve logs for "GameClient-05"
+activate DB_S3
+DB_S3 --> CLS_S3: Requested logs
+deactivate DB_S3
+CLS_S3 --> Dashboard: Retrieved logs
+deactivate CLS_S3
+Dashboard -> Admin: Display logs on dashboard
+deactivate Dashboard
+
+@enduml
+```

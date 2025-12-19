@@ -1,7 +1,6 @@
 // API Ayarları
 const API_BASE_URL = "http://localhost:5000/api";
 const mermaid = window.mermaid; // şimdilik dursun (mermaid kullanmıyorsak bile sorun değil)
-
 // -----------------------------
 // ✅ Feature/Scenario Picker State
 // -----------------------------
@@ -23,7 +22,7 @@ async function loadFeatureList() {
   scenarioSelect.disabled = true;
   loadScenarioBtn.disabled = true;
   loadFeatureBtn.disabled = true;
-  info.textContent = "No election was held.";
+  info.textContent = "No selection made.";
 
   try {
     const res = await fetch(`${API_BASE_URL}/features`);
@@ -97,7 +96,7 @@ async function onFeatureChange() {
     scenarioSelect.disabled = scenarioCache.length === 0;
     loadFeatureBtn.disabled = false;
 
-    info.textContent = `Feature selected: ${path} — ${scenarioCache.length} the scenario was found.`;
+    info.textContent = `Feature selected: ${path} — ${scenarioCache.length} scenario(s) found.`;
     showToast("Feature loaded!");
   } catch (err) {
     currentFeatureText = "";
@@ -240,7 +239,7 @@ async function generateRequirements() {
       throw new Error(data.error || "Unknown error");
     }
   } catch (error) {
-    displayOutput(`❌ Eror: ${error.message}\n\nRun the Python server: python server.py`);
+    displayOutput(`❌ Error: ${error.message}\n\nRun the Python server: python server.py`);
     showToast("An error occurred!");
   } finally {
     showLoading(false);
@@ -350,7 +349,7 @@ function showToast(message) {
 
 function clearInput() {
   document.getElementById("bddInput").value = "";
-  showToast("The entrance has been cleared.");
+  showToast("Input cleared.");
 }
 
 function copyOutput(tabName) {
